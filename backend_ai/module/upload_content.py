@@ -46,7 +46,3 @@ def upload_txt_file(filepaths: list, vector_store_id: str):
 
     return results
 
-
-filepath = ["test2/rag/data/character/A/character.txt"]
-upload_txt_file(filepath, "vs_6853b7ee203c81919e2ba157763f3eab")
-

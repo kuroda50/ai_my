@@ -19,10 +19,8 @@ def create_vector_store(store_name: str) -> dict:
             "created_at": vector_store.created_at,
             "file_count": vector_store.file_counts.completed
         }
-        print("Vector store created:", details)
+        print("Vector storeを作成しました:", details)
         return details
     except Exception as e:
-        print(f"Error creating vector store: {e}")
+        print(f"vector storeを作成中にエラーが発生しました: {e}")
         return {}
-    
-create_vector_store("test_vector_store")
