@@ -177,17 +177,20 @@ class AIService {
   // Start AI conversation between characters
   static Future<Map<String, dynamic>?> startAIConversation(
     List<String> vectorStoreIds, 
-    Map<String, String> event
+    Map<String, String> event,
+    {List<Map<String, dynamic>>? characterData}
   ) async {
     try {
       print('AIService: AI会話リクエストを開始');
       print('AIService: vectorStoreIds = $vectorStoreIds');
       print('AIService: event = $event');
+      print('AIService: characterData = $characterData');
       print('AIService: baseUrl = $baseUrl');
       
       final requestData = {
         "vector_store_ids": vectorStoreIds,
         "event": event,
+        "character_data": characterData,
       };
       
       print('AIService: リクエストデータ = $requestData');

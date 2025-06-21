@@ -103,13 +103,16 @@ def call_ai_conversation():
     data = request.get_json()
     vector_store_ids = data.get("vector_store_ids", [])
     event = data.get("event", {})
+    character_data = data.get("character_data", [])
+    
+    print("受信したキャラクターデータ:", character_data)
     
     # AI会話を実行し、結果を取得
     conversation_messages = []
     try:
         # 実際のAI会話を呼び出し
         if len(vector_store_ids) >= 2:
-            conversation_messages = ai_chat_between_characters(vector_store_ids, event)
+            conversation_messages = ai_chat_between_characters(vector_store_ids, event, character_data)
         else:
             # フォールバック用の固定メッセージ
             conversation_messages = [
