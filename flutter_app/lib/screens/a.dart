@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'complex_form.dart';
 import '../widgets/emotion_slider.dart';
 import '../widgets/question_field.dart';
@@ -323,7 +324,7 @@ class _AState extends State<A> with TickerProviderStateMixin {
     _saveEventToLocal(basicData, emotionData);
 
     // ホーム画面に戻る
-    Navigator.of(context).pop();
+    context.go('/home');
   }
 
   void _saveEventToLocal(Map<String, String> basicData, Map<String, double> emotionData) async {

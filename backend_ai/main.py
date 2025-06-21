@@ -102,13 +102,14 @@ def call_ai_conversation():
     print("ai_conversationが呼ばれたよ")
     data = request.get_json()
     vector_store_ids = data.get("vector_store_ids", [])
+    event = data.get("event", {})
     
     # AI会話を実行し、結果を取得
     conversation_messages = []
     try:
         # 実際のAI会話を呼び出し
         if len(vector_store_ids) >= 2:
-            conversation_messages = ai_chat_between_characters(vector_store_ids)
+            conversation_messages = ai_chat_between_characters(vector_store_ids, event)
         else:
             # フォールバック用の固定メッセージ
             conversation_messages = [
@@ -124,7 +125,9 @@ def call_ai_conversation():
             "status": "success",
             "messages": conversation_messages
         }
-        return jsonify(response_data), 200
+        
+        json_str = json.dumps(response_data, ensure_ascii=False)
+        return Response(json_str, content_type="application/json; charset=utf-8"), 200
         
     except Exception as e:
         print(f"AI会話エラー: {e}")
@@ -133,7 +136,8 @@ def call_ai_conversation():
             "message": str(e),
             "messages": []
         }
-        return jsonify(response_data), 500
+        json_str = json.dumps(response_data, ensure_ascii=False)
+        return Response(json_str, content_type="application/json; charset=utf-8"), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)

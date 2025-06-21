@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/person.dart';
 import '../services/ai_service.dart';
+import '../services/local_storage.dart';
 
 class AIConversationDialog extends StatefulWidget {
   final Person user;
@@ -66,10 +67,30 @@ class _AIConversationDialogState extends State<AIConversationDialog>
   }
 
   void _startConversation() {
-    // Start with a greeting from the AI character
-    final greeting = widget.aiCharacter.messages.isNotEmpty 
-        ? widget.aiCharacter.messages.first
-        : 'こんにちは、私はあなたの新しい一面です。何について話したいですか？';
+    // Get the latest event to use as conversation starter
+    _getLatestEvent().then((event) {
+      if (event != null) {
+        final greeting = _generateGreeting(event);
+        setState(() {
+          conversation.add({
+            'sender': widget.aiCharacter.name,
+            'message': greeting,
+            'isUser': 'false',
+          });
+        });
+      } else {
+        _startConversationWithoutEvent();
+      }
+    });
+  }
+
+  void _startConversationWithoutEvent() {
+    String greeting;
+    if (widget.aiCharacter.messages.isNotEmpty) {
+      greeting = _cleanMessage(widget.aiCharacter.messages.first);
+    } else {
+      greeting = 'こんにちは、私はあなたの新しい一面です。何について話したいですか？';
+    }
     
     setState(() {
       conversation.add({
@@ -115,16 +136,36 @@ class _AIConversationDialogState extends State<AIConversationDialog>
     });
 
     try {
-      // For now, use predefined responses since we don't have the RAG endpoint
-      // In a full implementation, you would call a real AI chat endpoint
-      final aiResponse = await _generateAIResponse(message);
+      // Call the AI service to get response
+      final response = await AIService.startAIConversation(
+        [widget.aiCharacter.vectorStoreId!],
+        {
+          'what': message,
+          'where': 'カフェ',
+          'when': '今',
+          'who': widget.user.name,
+          'why': '会話を続けるため',
+          'how': '自然な対話を通じて'
+        }
+      );
       
-      await Future.delayed(const Duration(milliseconds: 1000)); // Simulate thinking time
-      
-      if (mounted) {
-        _addMessage(aiResponse, false);
+      if (response != null && response['messages'] != null) {
+        final messages = List<Map<String, dynamic>>.from(response['messages']);
+        
+        // Only display assistant messages (filter out system and user messages)
+        for (final messageData in messages) {
+          if (messageData['role'] == 'assistant' && messageData['content'] != null) {
+            final cleanContent = _cleanMessage(messageData['content']);
+            if (mounted) {
+              _addMessage(cleanContent, false);
+            }
+            // Add a small delay between messages for better UX
+            await Future.delayed(const Duration(milliseconds: 500));
+          }
+        }
       }
     } catch (e) {
+      print('Error in AI conversation: $e');
       if (mounted) {
         _addMessage('すみません、少し調子が悪いみたいです。もう一度お話しできますか？', false);
       }
@@ -138,19 +179,56 @@ class _AIConversationDialogState extends State<AIConversationDialog>
   }
 
   Future<String> _generateAIResponse(String userMessage) async {
-    // For demonstration, we'll use context-aware responses based on the character
+    // Get latest event for context-aware responses
+    final latestEvent = await _getLatestEvent();
+    
+    // For demonstration, we'll use context-aware responses based on the character and event
     // In a real implementation, this would call the backend_ai RAG endpoint
     
-    final responses = _getContextualResponses(userMessage);
+    final responses = _getContextualResponses(userMessage, latestEvent);
     return responses[DateTime.now().millisecondsSinceEpoch % responses.length];
   }
 
-  List<String> _getContextualResponses(String userMessage) {
+  List<String> _getContextualResponses(String userMessage, Map<String, dynamic>? event) {
     final message = userMessage.toLowerCase();
     
     // Use character settings and complex data to provide contextual responses
     final characterData = widget.aiCharacter.aiCharacterSettings ?? '';
     final complexData = widget.aiCharacter.complexData ?? {};
+    
+    // Event-specific responses
+    if (event != null) {
+      final eventDescription = event['basicData']?['what'] ?? '';
+      final eventWhere = event['basicData']?['where'] ?? '';
+      final eventWhen = event['basicData']?['when'] ?? '';
+      
+      if (message.contains(eventDescription.toLowerCase()) || 
+          message.contains('そのこと') || 
+          message.contains('それ')) {
+        return [
+          '「$eventDescription」について、もう少し詳しく聞かせてもらえますか？',
+          '「$eventDescription」の時の気持ち、とてもよく分かります。',
+          '「$eventDescription」を通じて、何か新しい発見はありましたか？',
+          '「$eventDescription」について、一緒に考えてみましょう。',
+        ];
+      }
+      
+      if (message.contains('場所') || message.contains('どこ')) {
+        return [
+          '「$eventWhere」での出来事でしたね。その場所での印象はどうでしたか？',
+          '「$eventWhere」は特別な場所だったんですか？',
+          '「$eventWhere」での経験、大切にしたいですね。',
+        ];
+      }
+      
+      if (message.contains('時') || message.contains('いつ')) {
+        return [
+          '「$eventWhen」の時の気持ち、今でも覚えていますか？',
+          '「$eventWhen」の経験が、今のあなたに影響を与えているかもしれませんね。',
+          '「$eventWhen」のことを振り返ってみて、どう感じますか？',
+        ];
+      }
+    }
     
     if (message.contains('コンプレックス') || message.contains('悩み')) {
       return [
@@ -184,6 +262,44 @@ class _AIConversationDialogState extends State<AIConversationDialog>
       'その時のあなたの気持ちを聞かせてください。',
       '一緒に考えてみましょう。',
     ];
+  }
+
+  String _cleanMessage(String message) {
+    // Remove role, user, assistant prefixes and clean up the message
+    String cleaned = message;
+    
+    // Remove common prefixes
+    cleaned = cleaned.replaceAll(RegExp(r'^(role|user|assistant|system):\s*', caseSensitive: false), '');
+    cleaned = cleaned.replaceAll(RegExp(r'^<[^>]+>:\s*'), '');
+    cleaned = cleaned.replaceAll(RegExp(r'^\[[^\]]+\]:\s*'), '');
+    
+    // Remove extra whitespace
+    cleaned = cleaned.trim();
+    
+    return cleaned;
+  }
+
+  Future<Map<String, dynamic>?> _getLatestEvent() async {
+    try {
+      final events = await LocalStorage.getEvents();
+      if (events.isNotEmpty) {
+        // 最新のイベントを取得（timestampでソート）
+        events.sort((a, b) {
+          final aTime = DateTime.parse(a['timestamp'] ?? '1970-01-01');
+          final bTime = DateTime.parse(b['timestamp'] ?? '1970-01-01');
+          return bTime.compareTo(aTime); // 降順（最新が先頭）
+        });
+        return events.first;
+      }
+    } catch (e) {
+      print('Error getting latest event: $e');
+    }
+    return null;
+  }
+
+  String _generateGreeting(Map<String, dynamic> event) {
+    final eventDescription = event['basicData']?['what'] ?? '最近の出来事';
+    return 'こんにちは！最近の「$eventDescription」について、どう思いますか？一緒に話してみませんか？';
   }
 
   @override
@@ -395,7 +511,7 @@ class _AIConversationDialogState extends State<AIConversationDialog>
                                                 ),
                                                 const SizedBox(height: 4),
                                                 Text(
-                                                  message['message']!,
+                                                  _cleanMessage(message['message']!),
                                                   style: const TextStyle(fontSize: 14),
                                                 ),
                                               ],

@@ -175,41 +175,61 @@ class AIService {
   }
   
   // Start AI conversation between characters
-  Future<Stream<String>> startAIConversation(List<String> vectorStoreIds) async {
-    final controller = StreamController<String>();
-    
+  static Future<Map<String, dynamic>?> startAIConversation(
+    List<String> vectorStoreIds, 
+    Map<String, String> event
+  ) async {
     try {
+      print('AIService: AI会話リクエストを開始');
+      print('AIService: vectorStoreIds = $vectorStoreIds');
+      print('AIService: event = $event');
+      print('AIService: baseUrl = $baseUrl');
+      
       final requestData = {
         "vector_store_ids": vectorStoreIds,
+        "event": event,
       };
+      
+      print('AIService: リクエストデータ = $requestData');
       
       final response = await http.post(
         Uri.parse('$baseUrl/ai_conversation'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(requestData),
-      );
+      ).timeout(const Duration(seconds: 30));
+      
+      print('AIService: レスポンス受信 - ステータス: ${response.statusCode}');
+      print('AIService: レスポンスボディ: ${response.body}');
       
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        final messages = responseData['messages'] as List<dynamic>?;
-        
-        if (messages != null) {
-          // メッセージを順番に送信
-          for (int i = 0; i < messages.length; i++) {
-            await Future.delayed(Duration(milliseconds: 1500 * (i + 1)));
-            controller.add(messages[i].toString());
-          }
-        }
+        print('AIService: レスポンス解析成功');
+        return responseData;
       } else {
-        controller.addError('AI会話の開始に失敗しました: ${response.statusCode}');
+        print('AIService: エラー - ステータス: ${response.statusCode}');
+        print('AIService: エラーレスポンス: ${response.body}');
+        
+        // フォールバック用のダミーデータを返す
+        return {
+          'status': 'fallback',
+          'messages': [
+            'システム: バックエンドサーバーに接続できませんでした',
+            'システム: デモ会話を表示します'
+          ]
+        };
       }
     } catch (e) {
-      controller.addError('AI会話エラー: $e');
-    } finally {
-      controller.close();
+      print('AIService: 例外発生 - $e');
+      
+      // フォールバック用のダミーデータを返す
+      return {
+        'status': 'fallback',
+        'messages': [
+          'システム: 接続エラーが発生しました',
+          'システム: デモ会話を表示します'
+        ]
+      };
     }
-    
-    return controller.stream;
   }
   
   // Check if backend is available
