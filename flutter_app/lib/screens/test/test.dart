@@ -34,7 +34,9 @@ Future<void> sendCharacterRequest() async {
     "vector_store_id": ["vs_68564b7e41a48191a1a3c3d34a3b21a4", "vs_68564c49c6a4819190414d44ddaedeea"]
   };
   // APIのURL（ローカル環境でエミュレータを使う場合は要注意）
-  final uri = Uri.parse("http://localhost:5000/ai_chat");
+
+  final uri = Uri.parse("http://192.168.26.105:5001/generate_character");
+
 
   // final Map<String, dynamic> requestData = {
   //   "q1_answer": "社会に適合できない。",
@@ -48,6 +50,7 @@ Future<void> sendCharacterRequest() async {
   //   "q9_answer": "治せるなら治したいな。でも、できるだけ快適な環境に居続けて、自分の好きなことをしていたい。",
   // };
   // final uri = Uri.parse("http://localhost:5000/generate_character");
+
 
   try {
     final response = await http.post(
