@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'complex_form.dart';
 import '../widgets/emotion_slider.dart';
 import '../widgets/question_field.dart';
+import '../services/local_storage.dart';
 
 class A extends StatefulWidget {
   const A({super.key});
@@ -318,15 +319,34 @@ class _AState extends State<A> with TickerProviderStateMixin {
       'pleasure': _pleasureLevel,
     };
 
-    // コンプレックス入力フォーム画面に遷移
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => ComplexForm(
-          basicData: basicData,
-          emotionData: emotionData,
+    // イベントデータをローカルストレージに保存
+    _saveEventToLocal(basicData, emotionData);
+
+    // ホーム画面に戻る
+    Navigator.of(context).pop();
+  }
+
+  void _saveEventToLocal(Map<String, String> basicData, Map<String, double> emotionData) async {
+    try {
+      await LocalStorage.saveEvent({
+        'basicData': basicData,
+        'emotionData': emotionData,
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('イベントが保存されました'),
+          backgroundColor: Colors.green,
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('保存に失敗しました: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _resetForm() {

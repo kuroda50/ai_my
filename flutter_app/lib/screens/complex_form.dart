@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'b.dart';
 import '../models/person.dart';
 import '../services/ai_service.dart';
+import '../services/local_storage.dart';
 
 class ComplexForm extends StatefulWidget {
   final Map<String, String> basicData;
@@ -178,12 +180,13 @@ class _ComplexFormState extends State<ComplexForm> {
             vectorStoreId: vectorStoreId,
           );
 
-          // Navigate to b.dart with AI-generated character
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => B(newSelf: newSelf),
-            ),
-          );
+          // Save character to local storage
+          _saveCharacterToLocal(newSelf);
+
+          // Navigate to cafe page (b.dart) through go_router
+          Navigator.of(context).pop(); // 現在のページを閉じる
+          Navigator.of(context).pop(); // ホーム画面に戻る
+          context.go('/cafe');
         } else {
           _showErrorDialog('AIキャラクターの生成に失敗しました。もう一度お試しください。');
         }
@@ -228,6 +231,26 @@ class _ComplexFormState extends State<ComplexForm> {
     }
     
     return messages;
+  }
+
+  void _saveCharacterToLocal(Person character) async {
+    try {
+      await LocalStorage.saveCharacter(character);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('キャラクターが保存されました'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('保存に失敗しました: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _showErrorDialog(String message) {

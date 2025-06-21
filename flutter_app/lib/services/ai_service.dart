@@ -15,24 +15,51 @@ class AIService {
     final gender = "女性"; // Backend expects female characters
     final situation = "学生"; // Default situation
     
+    // 安全に値を取得するヘルパー関数
+    String safeGet(Map<String, String> data, String key, String defaultValue) {
+      if (data == null || data.isEmpty) return defaultValue;
+      final value = data[key];
+      return value?.isNotEmpty == true ? value! : defaultValue;
+    }
+    
+    // 安全に感情データを取得するヘルパー関数
+    String safeGetEmotion(Map<String, double> emotionData) {
+      if (emotionData == null || emotionData.isEmpty) return '複雑な気持ち';
+      return _getEmotionDescription(emotionData);
+    }
+    
+    // デバッグ情報
+    print('Debug: Converting data...');
+    print('Debug: basicData is empty: ${basicData.isEmpty}');
+    print('Debug: emotionData is empty: ${emotionData.isEmpty}');
+    print('Debug: complexData is empty: ${complexData.isEmpty}');
+    
     return {
       "character_index": "0", // Always use 0 for first character
-      "q0_answer": "$age、$gender、$situation、現在の状況: ${basicData['what'] ?? ''}",
-      "q1_answer": "${complexData['question_1'] ?? ''}。感情的には${_getEmotionDescription(emotionData)}を感じている。",
-      "q2_answer": "${complexData['question_4'] ?? ''}。${basicData['where'] ?? ''}のような場所で${basicData['when'] ?? ''}に困ることがある。",
-      "q3_answer": "${complexData['question_6'] ?? ''}。${basicData['why'] ?? ''}という理由で向き合うことを試みた。",
-      "q4_answer": "${complexData['question_2'] ?? ''}。${basicData['who'] ?? ''}のような人と関わる時に${complexData['question_7'] ?? ''}",
-      "q5_answer": "${complexData['question_9'] ?? ''}。${basicData['how'] ?? ''}のような方法で成長していきたい。"
+      "q0_answer": "$age、$gender、$situation、現在の状況: ${safeGet(basicData, 'what', 'コンプレックスについて考え中')}",
+      "q1_answer": "${safeGet(complexData, 'question_1', 'コンプレックスについて考え中')}。感情的には${safeGetEmotion(emotionData)}を感じている。",
+      "q2_answer": "${safeGet(complexData, 'question_2', 'コンプレックスの見方について')}。${safeGet(basicData, 'where', '日常生活')}のような場所で${safeGet(basicData, 'when', '人前で話す時')}に困ることがある。",
+      "q3_answer": "${safeGet(complexData, 'question_3', 'コンプレックスを感じ始めた時期')}。${safeGet(basicData, 'why', '自己改善のため')}という理由で向き合うことを試みた。",
+      "q4_answer": "${safeGet(complexData, 'question_4', 'コンプレックスを感じる状況')}。${safeGet(basicData, 'who', '周りの人')}のような人と関わる時に${safeGet(complexData, 'question_5', '緊張してしまう')}",
+      "q5_answer": "${safeGet(complexData, 'question_5', 'コンプレックスを感じた時の感情')}。${safeGet(basicData, 'how', '少しずつ改善していく')}のような方法で成長していきたい。",
+      "q6_answer": safeGet(complexData, 'question_6', 'コンプレックスによる行動パターン'),
+      "q7_answer": safeGet(complexData, 'question_7', 'コンプレックスが人間関係に与える影響'),
+      "q8_answer": safeGet(complexData, 'question_8', 'コンプレックスのポジティブな側面'),
+      "q9_answer": safeGet(complexData, 'question_9', 'コンプレックスとの向き合い方')
     };
   }
   
   static String _getEmotionDescription(Map<String, double> emotionData) {
+    if (emotionData == null || emotionData.isEmpty) {
+      return '複雑な気持ち';
+    }
+    
     final emotions = <String>[];
     
-    if (emotionData['joy']! > 60) emotions.add('喜び');
-    if (emotionData['anger']! > 60) emotions.add('怒り');
-    if (emotionData['sadness']! > 60) emotions.add('悲しみ');
-    if (emotionData['pleasure']! > 60) emotions.add('楽しさ');
+    if (emotionData['joy'] != null && emotionData['joy']! > 60) emotions.add('喜び');
+    if (emotionData['anger'] != null && emotionData['anger']! > 60) emotions.add('怒り');
+    if (emotionData['sadness'] != null && emotionData['sadness']! > 60) emotions.add('悲しみ');
+    if (emotionData['pleasure'] != null && emotionData['pleasure']! > 60) emotions.add('楽しさ');
     
     if (emotions.isEmpty) return '複雑な気持ち';
     return emotions.join('と');
@@ -45,17 +72,41 @@ class AIService {
     Map<String, String> complexData,
   ) async {
     try {
-      final requestData = _convertToBackendFormat(basicData, emotionData, complexData);
+      print('Debug: Starting character generation...');
+      print('Debug: basicData keys = ${basicData.keys.toList()}');
+      print('Debug: emotionData keys = ${emotionData.keys.toList()}');
+      print('Debug: complexData keys = ${complexData.keys.toList()}');
       
+      final requestData = _convertToBackendFormat(basicData, emotionData, complexData);
+      print('Debug: requestData created successfully');
+      
+      // デバッグ情報を出力
+      print('Debug: basicData = $basicData');
+      print('Debug: emotionData = $emotionData');
+      print('Debug: complexData = $complexData');
+      print('Debug: requestData = $requestData');
+      
+      print('Debug: Sending HTTP request to $baseUrl/generate_character');
       final response = await http.post(
         Uri.parse('$baseUrl/generate_character'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(requestData),
       );
+      print('Debug: HTTP response received: ${response.statusCode}');
       
       if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        return responseData;
+        print('Debug: Parsing response body...');
+        try {
+          final responseData = jsonDecode(response.body);
+          print('Debug: Response parsed successfully');
+          print('Debug: Response data type = ${responseData.runtimeType}');
+          print('Debug: Response data keys = ${responseData is Map ? responseData.keys.toList() : 'Not a Map'}');
+          return responseData;
+        } catch (jsonError) {
+          print('Error parsing JSON response: $jsonError');
+          print('Response body: ${response.body}');
+          return null;
+        }
       } else {
         print('Error generating character: ${response.statusCode}');
         print('Response body: ${response.body}');
@@ -63,6 +114,13 @@ class AIService {
       }
     } catch (e) {
       print('Exception during character generation: $e');
+      // StackTraceの安全な処理
+      try {
+        final stackTrace = StackTrace.current;
+        print('Stack trace: $stackTrace');
+      } catch (stackError) {
+        print('Could not get stack trace: $stackError');
+      }
       return null;
     }
   }
