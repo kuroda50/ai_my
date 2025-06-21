@@ -183,11 +183,9 @@ class _ComplexFormState extends State<ComplexForm> {
           // Save character to local storage
           _saveCharacterToLocal(newSelf);
 
-          // Navigate to cafe page (b.dart) through go_router
+          // Navigate back to home page
           if (context.mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => B(newSelf: newSelf)),
-            );
+            context.go('/home');
           }
         } else {
           if (context.mounted) {

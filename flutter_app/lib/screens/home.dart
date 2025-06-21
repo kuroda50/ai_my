@@ -15,6 +15,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   int _selectedTab = 0;
   List<Map<String, dynamic>> events = [];
   List<Map<String, dynamic>> characters = [];
+  List<Map<String, dynamic>> conversationLogs = [];
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
 
@@ -38,17 +39,22 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _loadData();
+    // 画面に戻ってきた時だけデータを再読み込み
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
   }
 
   Future<void> _loadData() async {
     try {
       final loadedEvents = await LocalStorage.getEvents();
       final loadedCharacters = await LocalStorage.getCharacters();
+      final loadedConversationLogs = await LocalStorage.getConversationLogs();
       
       setState(() {
         events = loadedEvents;
         characters = loadedCharacters;
+        conversationLogs = loadedConversationLogs;
       });
     } catch (e) {
       print('データ読み込みエラー: $e');
@@ -379,34 +385,57 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   Widget _buildConversationCards() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.chat_bubble_outline,
-            size: 64,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            '会話ログ',
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.bold,
+    if (conversationLogs.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.chat_bubble_outline,
+              size: 64,
+              color: Colors.grey[400],
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '会話ログ機能は準備中です',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[500],
+            const SizedBox(height: 16),
+            Text(
+              '会話ログ',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-        ],
-      ),
+            const SizedBox(height: 8),
+            Text(
+              'まだ会話ログがありません\nキャラクター同士を近づけて会話を始めましょう',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[500],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: conversationLogs.length,
+      itemBuilder: (context, index) {
+        final log = conversationLogs[index];
+        final participants = List<String>.from(log['participants'] ?? []);
+        final timestamp = log['timestamp'] != null
+            ? DateTime.parse(log['timestamp']).toString().substring(0, 16)
+            : '';
+        final eventTrigger = log['event_trigger'] as Map<String, dynamic>? ?? {};
+        final eventDescription = eventTrigger['what'] ?? 'イベント';
+        
+        return _buildConversationCard(
+          participants: participants,
+          timestamp: timestamp,
+          eventDescription: eventDescription,
+          onTap: () => _showConversationDetail(log),
+        );
+      },
     );
   }
 
@@ -579,7 +608,11 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: GestureDetector(
-        onTap: () => context.go('/journal'),
+        onTap: () async {
+          await context.push('/journal');
+          // 画面から戻ってきた時にデータを再読み込み
+          await _loadData();
+        },
         child: Container(
           height: 140,
           decoration: BoxDecoration(
@@ -619,7 +652,11 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: GestureDetector(
-        onTap: () => context.go('/comp'),
+        onTap: () async {
+          await context.push('/comp');
+          // 画面から戻ってきた時にデータを再読み込み
+          await _loadData();
+        },
         child: Container(
           height: 140,
           decoration: BoxDecoration(
@@ -651,6 +688,134 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildConversationCard({
+    required List<String> participants,
+    required String timestamp,
+    required String eventDescription,
+    required VoidCallback onTap,
+  }) {
+    return AnimatedBuilder(
+      animation: _scaleAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _selectedTab == 2 ? _scaleAnimation.value : 1.0,
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            child: GestureDetector(
+              onTap: onTap,
+              child: Container(
+                height: 140,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFBDBDBD),
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.chat_bubble,
+                        size: 32,
+                        color: Colors.teal,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        participants.join(' × '),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        eventDescription,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.black54,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
+                      if (timestamp.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          timestamp,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Colors.black45,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showConversationDetail(Map<String, dynamic> log) {
+    final participants = List<String>.from(log['participants'] ?? []);
+    final messages = List<dynamic>.from(log['messages'] ?? []);
+    final eventTrigger = log['event_trigger'] as Map<String, dynamic>? ?? {};
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${participants.join(' × ')} の会話'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (eventTrigger.isNotEmpty) ...[
+                Text(
+                  'きっかけ: ${eventTrigger['what'] ?? ''}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue,
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+              ...messages.map((message) => Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  message.toString(),
+                  style: const TextStyle(fontSize: 14),
+                ),
+              )).toList(),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('閉じる'),
+          ),
+        ],
       ),
     );
   }

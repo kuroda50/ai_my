@@ -76,17 +76,30 @@ class _NearbyConversationDialogState extends State<NearbyConversationDialog>
       
       // AIサービスを使って会話を開始
       if (vectorStoreIds.length >= 2) {
-        final aiService = AIService();
-        final conversationStream = await aiService.startAIConversation(vectorStoreIds);
+        final event = {
+          'what': '近づいて会話を始めた',
+          'where': 'カフェ',
+          'when': '今',
+          'who': '${widget.person1.name}と${widget.person2.name}',
+          'why': 'お互いを理解するため',
+          'how': '自然な会話を通じて'
+        };
         
-        // 会話のストリームを監視してUIを更新
-        conversationStream.listen((message) {
-          if (mounted) {
-            setState(() {
-              conversation.add(message);
-            });
+        final conversationResult = await AIService.startAIConversation(vectorStoreIds, event);
+        
+        if (conversationResult != null && conversationResult['messages'] != null) {
+          final messages = List<String>.from(conversationResult['messages']);
+          for (final message in messages) {
+            if (mounted) {
+              setState(() {
+                conversation.add(message);
+              });
+            }
           }
-        });
+        } else {
+          // フォールバック: 既存のメッセージを使用
+          _showConversationSequence();
+        }
       } else {
         // フォールバック: 既存のメッセージを使用
         _showConversationSequence();

@@ -5,6 +5,7 @@ import '../models/person.dart';
 class LocalStorage {
   static const String _eventsKey = 'events';
   static const String _charactersKey = 'characters';
+  static const String _conversationLogsKey = 'conversation_logs';
 
   // Event関連
   static Future<void> saveEvent(Map<String, dynamic> eventData) async {
@@ -79,10 +80,46 @@ class LocalStorage {
     await prefs.setString(_charactersKey, jsonEncode(characters));
   }
 
+  // ConversationLog関連
+  static Future<void> saveConversationLog(Map<String, dynamic> conversationData) async {
+    final prefs = await SharedPreferences.getInstance();
+    final logs = await getConversationLogs();
+    
+    final log = {
+      'id': DateTime.now().millisecondsSinceEpoch.toString(),
+      'timestamp': DateTime.now().toIso8601String(),
+      'participants': conversationData['participants'],
+      'messages': conversationData['messages'],
+      'event_trigger': conversationData['event_trigger'],
+    };
+    
+    logs.add(log);
+    await prefs.setString(_conversationLogsKey, jsonEncode(logs));
+  }
+
+  static Future<List<Map<String, dynamic>>> getConversationLogs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final logsJson = prefs.getString(_conversationLogsKey);
+    
+    if (logsJson == null) return [];
+    
+    final logsList = jsonDecode(logsJson) as List;
+    return logsList.cast<Map<String, dynamic>>();
+  }
+
+  static Future<void> deleteConversationLog(String logId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final logs = await getConversationLogs();
+    
+    logs.removeWhere((log) => log['id'] == logId);
+    await prefs.setString(_conversationLogsKey, jsonEncode(logs));
+  }
+
   // データクリア
   static Future<void> clearAllData() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_eventsKey);
     await prefs.remove(_charactersKey);
+    await prefs.remove(_conversationLogsKey);
   }
 }
