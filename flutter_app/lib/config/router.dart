@@ -37,12 +37,13 @@ final router = GoRouter(
           path: '/library',
           pageBuilder: (context, state) => NoTransitionPage(child: Library()),
         ),
+        // GoRoute(
+        //   path: '/settings',
+        //   pageBuilder: (context, state) => NoTransitionPage(child: C()),
+        // ),
+        // 一時的にルートを変更
         GoRoute(
           path: '/settings',
-          pageBuilder: (context, state) => NoTransitionPage(child: C()),
-        ),
-        GoRoute(
-          path: '/test',
           pageBuilder: (context, state) => NoTransitionPage(child: Test()),
         ),
       ],
