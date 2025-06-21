@@ -4,6 +4,7 @@ import 'drag_conversation_dialog.dart';
 import '../models/person.dart';
 import '../widgets/conversation_dialogs.dart';
 import '../widgets/avatar_widget.dart';
+import '../services/local_storage.dart';
 
 class B extends StatefulWidget {
   final Person? newSelf;
@@ -67,7 +68,7 @@ class _BState extends State<B> with TickerProviderStateMixin {
     });
   }
 
-  void _initializePeople() {
+  void _initializePeople() async {
     people = [
       Person(
         id: 0,
@@ -86,6 +87,46 @@ class _BState extends State<B> with TickerProviderStateMixin {
     // 新しい自分が渡された場合は追加
     if (widget.newSelf != null) {
       people.add(widget.newSelf!);
+    } else {
+      // ローカルストレージから保存されたキャラクターを読み込み
+      await _loadSavedCharacters();
+    }
+  }
+
+  Future<void> _loadSavedCharacters() async {
+    try {
+      final savedCharacters = await LocalStorage.getCharacters();
+      
+      for (int i = 0; i < savedCharacters.length; i++) {
+        final characterData = savedCharacters[i];
+        final character = Person(
+          id: int.parse(characterData['id']),
+          name: characterData['name'],
+          color: Color(characterData['color'] ?? Colors.teal.value),
+          currentPosition: Offset(
+            100 + (i * 80.0) % (screenSize.width - 200),
+            200 + ((i ~/ 3) * 100.0),
+          ),
+          targetPosition: Offset(
+            100 + (i * 80.0) % (screenSize.width - 200),
+            200 + ((i ~/ 3) * 100.0),
+          ),
+          speed: 1.0,
+          direction: _getRandomDirection(),
+          lastDirectionChange: 0,
+          messages: List<String>.from(characterData['messages'] ?? []),
+          isUser: true,
+          complexData: Map<String, String>.from(characterData['complexData'] ?? {}),
+          aiCharacterSettings: characterData['aiCharacterSettings'],
+          aiConversationData: characterData['aiConversationData'],
+          vectorStoreId: characterData['vectorStoreId'],
+        );
+        people.add(character);
+      }
+      
+      setState(() {});
+    } catch (e) {
+      print('Error loading saved characters: $e');
     }
   }
 

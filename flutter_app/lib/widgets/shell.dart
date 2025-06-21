@@ -15,18 +15,30 @@ class Shell extends StatelessWidget {
 
     // 現在のタブインデックスを決定
     int currentIndex = 0;
-    if (location.startsWith('/cafe')) {
+    if (location.startsWith('/home')) {
+      currentIndex = 0;
+    } else if (location.startsWith('/journal')) {
       currentIndex = 1;
-    } else if (location.startsWith('/settings')) {
+    } else if (location.startsWith('/cafe')) {
       currentIndex = 2;
+    } else if (location.startsWith('/library')) {
+      currentIndex = 3;
+    } else if (location.startsWith('/settings')) {
+      currentIndex = 4;
     }
     return Scaffold(
       body: child,
       bottomNavigationBar: BottomNavigationBar(
         elevation: 0,
+        type: BottomNavigationBarType.fixed,
         currentIndex: currentIndex,
         onTap: (index) => _onItemTapped(index, context),
         items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label:'ホーム'
+          ),
           BottomNavigationBarItem(
             icon: Icon(Icons.book_outlined),
             activeIcon: Icon(Icons.book),
@@ -36,6 +48,11 @@ class Shell extends StatelessWidget {
             icon: Icon(Icons.local_cafe_outlined),
             activeIcon: Icon(Icons.local_cafe),
             label: 'カフェ',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.library_books_outlined),
+            activeIcon: Icon(Icons.library_books),
+            label: 'ライブラリ',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings_outlined),
@@ -50,12 +67,18 @@ class Shell extends StatelessWidget {
   void _onItemTapped(int index, BuildContext context) {
     switch (index) {
       case 0:
-        context.go('/journal');
+        context.go('/home');
         break;
       case 1:
-        context.go('/cafe');
+        context.go('/journal');
         break;
       case 2:
+        context.go('/cafe');
+        break;
+      case 3:
+        context.go('/library');
+        break;
+      case 4:
         context.go('/settings');
         break;
     }

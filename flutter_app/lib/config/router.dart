@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_app/screens/home.dart';
 import 'package:flutter_app/screens/a.dart';
 import 'package:flutter_app/screens/b.dart';
 import 'package:flutter_app/screens/c.dart';
+import 'package:flutter_app/screens/library.dart';
 import 'package:flutter_app/widgets/shell.dart';
 
 
@@ -12,12 +14,16 @@ final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 final router = GoRouter(
   navigatorKey: _rootNavigatorKey,
-  initialLocation: '/journal',
+  initialLocation: '/home',
   routes: [
     ShellRoute(
       navigatorKey: _shellNavigatorKey,
       builder: (context, state, child) => Shell(child: child),
       routes: [
+        GoRoute(
+          path: '/home',
+          pageBuilder: (context, state) => NoTransitionPage(child: Home()),
+        ),
         GoRoute(
           path: '/journal',
           pageBuilder: (context, state) => NoTransitionPage(child: A()),
@@ -25,6 +31,10 @@ final router = GoRouter(
         GoRoute(
           path: '/cafe',
           pageBuilder: (context, state) => NoTransitionPage(child: B()),
+        ),
+        GoRoute(
+          path: '/library',
+          pageBuilder: (context, state) => NoTransitionPage(child: Library()),
         ),
         GoRoute(
           path: '/settings',
