@@ -1,11 +1,12 @@
 from openai_client import client
 from prompt.conversation_generation import generate_conversation_prompt
+import os
 
-def generate_character_conversation(character_definition: str,character_index: int) -> list:
+def generate_character_conversation(character_definition: str,character_index: int, character_philosophy: str) -> list:
     response = client.chat.completions.create(
         model="gpt-4.1-mini",
         messages=[
-            {"role": "user", "content": generate_conversation_prompt(character_definition)}
+            {"role": "user", "content": generate_conversation_prompt(character_definition, character_philosophy)}
         ],
         temperature=0.8
     )
@@ -14,10 +15,10 @@ def generate_character_conversation(character_definition: str,character_index: i
     output_text = response.choices[0].message.content
 
     # 保存
-    if(character_index == 0):
-        output_path = "backend_ai/data/character/A/conversation.txt"
-    elif(character_index == 1):
-        output_path = "backend_ai/data/character/B/conversation.txt"
+    output_dir = f"backend_ai/data/character/{character_index}"
+    os.makedirs(output_dir, exist_ok=True)
+    
+    output_path = os.path.join(output_dir, "conversation.txt")
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(output_text)
 
