@@ -303,7 +303,9 @@ class _LibraryState extends State<Library> with SingleTickerProviderStateMixin {
 
   void _openCharacterChat(Map<String, dynamic> characterData) {
     // カフェ画面に遷移（bottomNavigationで保存されたキャラクター全体を表示）
-    context.go('/cafe');
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => B()),
+    );
   }
 
   void _deleteEvent(String eventId) {

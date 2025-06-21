@@ -55,7 +55,13 @@ class _DragConversationDialogState extends State<DragConversationDialog>
     ));
     
     _dialogController.forward();
-    _startConversation();
+    
+    // initState完了後に_startConversationを実行
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _startConversation();
+      }
+    });
     
     Future.delayed(const Duration(milliseconds: 600), () {
       if (mounted) {
@@ -65,6 +71,8 @@ class _DragConversationDialogState extends State<DragConversationDialog>
   }
 
   void _startConversation() {
+    if (!mounted) return;
+    
     // Check if this is an AI-generated character with vector store
     if (widget.otherPerson.isUser && 
         widget.otherPerson.aiCharacterSettings != null && 
@@ -87,6 +95,8 @@ class _DragConversationDialogState extends State<DragConversationDialog>
   }
 
   void _showAIConversationDialog() {
+    if (!mounted) return;
+    
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -94,9 +104,11 @@ class _DragConversationDialogState extends State<DragConversationDialog>
         user: widget.user,
         aiCharacter: widget.otherPerson,
         onClose: () {
-          Navigator.of(context).pop();
-          // Return to the main screen
-          widget.onClose();
+          if (mounted) {
+            Navigator.of(context).pop();
+            // Return to the main screen
+            widget.onClose();
+          }
         },
       ),
     );

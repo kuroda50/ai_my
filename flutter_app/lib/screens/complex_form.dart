@@ -185,7 +185,9 @@ class _ComplexFormState extends State<ComplexForm> {
 
           // Navigate to cafe page (b.dart) through go_router
           if (context.mounted) {
-            context.go('/cafe');
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => B(newSelf: newSelf)),
+            );
           }
         } else {
           if (context.mounted) {

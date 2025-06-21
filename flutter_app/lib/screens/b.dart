@@ -148,8 +148,27 @@ class _BState extends State<B> with TickerProviderStateMixin {
   }
 
   void _updatePeoplePositions() {
-    // 静的な位置を保持するため、アニメーション処理は削除
-    return;
+    // 近接検知のために人の位置を更新
+    for (final person in people) {
+      if (!person.isUser || person.id == 0) continue;
+      
+      // 自動移動の実装
+      if (_animationController.value * 1000 % 2000 > person.lastDirectionChange + 500) {
+        person.direction = _getRandomDirection();
+        person.lastDirectionChange = (_animationController.value * 1000).toInt().toDouble();
+      }
+      
+      // 位置を更新
+      person.currentPosition = Offset(
+        (person.currentPosition.dx + person.direction.dx * person.speed)
+            .clamp(25.0, screenSize.width - 75.0),
+        (person.currentPosition.dy + person.direction.dy * person.speed)
+            .clamp(100.0, screenSize.height - 150.0),
+      );
+    }
+    
+    // 近接検知
+    _checkProximity();
   }
 
   @override
@@ -161,8 +180,31 @@ class _BState extends State<B> with TickerProviderStateMixin {
   }
 
   void _checkProximity() {
-    // 近接検知ロジックは_startApproachingメソッド内で処理
-    return;
+    if (isInConversation) return;
+    
+    final userPerson = people.firstWhere((p) => p.id == 0);
+    nearbyPeople.clear();
+    
+    for (final person in people) {
+      if (person.id == 0) continue; // ユーザー自身は除外
+      
+      final distance = (userPerson.currentPosition - person.currentPosition).distance;
+      if (distance <= proximityThreshold) {
+        nearbyPeople.add(person);
+        
+        // 初回の近接時に会話を開始
+        if (!hasStartedApproaching) {
+          hasStartedApproaching = true;
+          _startNearbyConversation(userPerson, person);
+          break;
+        }
+      }
+    }
+    
+    // 近くに誰もいない場合はフラグをリセット
+    if (nearbyPeople.isEmpty) {
+      hasStartedApproaching = false;
+    }
   }
 
   void _startNearbyConversation(Person person1, Person person2) {

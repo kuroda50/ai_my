@@ -8,7 +8,7 @@ load_dotenv()
 # OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-def ai_chat_between_characters(vector_store_ids: list[str]) -> None:
+def ai_chat_between_characters(vector_store_ids: list[str]) -> list[str]:
     """
     AIキャラクターAとBの間で会話をシミュレートする関数
     """
@@ -23,6 +23,7 @@ def ai_chat_between_characters(vector_store_ids: list[str]) -> None:
     # )
     message = "ごはん美味しかった。あ、財布忘れちゃった。どうしよ"
     previous_response_id = None
+    conversation_log = []
 
     # キャラの交互ターン（0→A, 1→B）
     for i in range(4):
@@ -45,6 +46,7 @@ def ai_chat_between_characters(vector_store_ids: list[str]) -> None:
         )
         message = response_a.output_text
         print(message)
+        conversation_log.append(f"キャラA: {message}")
         previous_response_id = response_a.id
 
         print(f"\n[Turn {i+1}-B] キャラB:")
@@ -67,6 +69,8 @@ def ai_chat_between_characters(vector_store_ids: list[str]) -> None:
         )
         message = response_b.output_text
         print(message)
+        conversation_log.append(f"キャラB: {message}")
         previous_response_id = response_b.id
 
     print("\n=== 会話終了 ===")
+    return conversation_log

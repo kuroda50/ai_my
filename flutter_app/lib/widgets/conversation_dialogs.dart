@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/person.dart';
+import '../services/ai_service.dart';
 
 class NearbyConversationDialog extends StatefulWidget {
   final Person person1;
@@ -59,7 +60,42 @@ class _NearbyConversationDialogState extends State<NearbyConversationDialog>
     conversation.add('${widget.person1.name}と${widget.person2.name}が近づいて会話を始めました...');
     setState(() {});
     
-    _showConversationSequence();
+    _startAIConversation();
+  }
+  
+  void _startAIConversation() async {
+    try {
+      // vector_store_idsを取得（両方のキャラクターから）
+      final vectorStoreIds = <String>[];
+      if (widget.person1.vectorStoreId != null) {
+        vectorStoreIds.add(widget.person1.vectorStoreId!);
+      }
+      if (widget.person2.vectorStoreId != null) {
+        vectorStoreIds.add(widget.person2.vectorStoreId!);
+      }
+      
+      // AIサービスを使って会話を開始
+      if (vectorStoreIds.length >= 2) {
+        final aiService = AIService();
+        final conversationStream = await aiService.startAIConversation(vectorStoreIds);
+        
+        // 会話のストリームを監視してUIを更新
+        conversationStream.listen((message) {
+          if (mounted) {
+            setState(() {
+              conversation.add(message);
+            });
+          }
+        });
+      } else {
+        // フォールバック: 既存のメッセージを使用
+        _showConversationSequence();
+      }
+    } catch (e) {
+      print('AI会話エラー: $e');
+      // エラー時はフォールバック
+      _showConversationSequence();
+    }
   }
   
   void _showConversationSequence() {
