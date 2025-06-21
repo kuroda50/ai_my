@@ -31,12 +31,20 @@ class Test extends StatelessWidget {
 Future<void> sendCharacterRequest() async {
   // 送信するデータ
   final Map<String, dynamic> requestData = {
+        "event": {
+        "when": "今日の朝",
+        "where": "大学の教室",
+        "who": "僕",
+        "what": "教授に怒られた",
+        "why": "授業中にYoutubeを見ていたから",
+        "how": "みんなの前で軽く注意された",
+    },
     "vector_store_id": ["vs_685658ee59e48191aba78339dfbbfe14", "vs_68564c49c6a4819190414d44ddaedeea"]
   };
   // APIのURL（ローカル環境でエミュレータを使う場合は要注意）
 
   // final uri = Uri.parse("http://192.168.26.105:5001/generate_character");
-  final uri = Uri.parse("http://localhost:5001/ai_chat");
+  final uri = Uri.parse("http://192.168.0.248:5001/ai_chat");
 
 
   // final Map<String, dynamic> requestData = {
