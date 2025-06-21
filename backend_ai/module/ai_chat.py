@@ -1,11 +1,13 @@
 from openai_client import client
 
 
+
 def ai_chat_between_characters(vector_store_ids: list[str], event: dict) -> None:
     """
     AIキャラクターAとBの間で会話をシミュレートする関数（履歴を明示的に保持）
     """
     print("=== AI同士の会話を開始します ===\n")
+
 
     # 会話履歴を保持
     system_prompt_a = {
@@ -31,6 +33,7 @@ def ai_chat_between_characters(vector_store_ids: list[str], event: dict) -> None
 
     for i in range(3):
         # Aの応答を生成
+
         print(f"\n[Turn {i+1}-A] キャラA:")
         response_a = client.chat.completions.create(
             model="gpt-4o",
@@ -44,10 +47,12 @@ def ai_chat_between_characters(vector_store_ids: list[str], event: dict) -> None
                 }
             ],
         )
+
         output_a = response_a.choices[0].message.content
         print(output_a)
         messages_a.append({"role": "assistant", "content": output_a})
         messages_b.append({"role": "user", "content": output_a})
+
 
         # Bの応答を生成
         print(f"\n[Turn {i+1}-B] キャラB:")
@@ -63,6 +68,7 @@ def ai_chat_between_characters(vector_store_ids: list[str], event: dict) -> None
                 }
             ],
         )
+
         output_b = response_b.choices[0].message.content
         print(output_b)
         messages_a.append({"role": "assistant", "content": output_b})
@@ -154,3 +160,4 @@ def format_event(event: dict) -> str:
 #         previous_response_id = response_b.id
 
 #     print("\n=== 会話終了 ===")
+

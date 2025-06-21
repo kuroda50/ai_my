@@ -92,5 +92,48 @@ def call_ai_chat():
 
     # return jsonify(response_data), 200
 
+'''リクエストボディは以下のJSON形式
+{
+    "vector_store_ids": ["vs_A_id", "vs_B_id"]
+}
+'''
+@app.route("/ai_conversation", methods=["POST"])
+def call_ai_conversation():
+    print("ai_conversationが呼ばれたよ")
+    data = request.get_json()
+    vector_store_ids = data.get("vector_store_ids", [])
+    
+    # AI会話を実行し、結果を取得
+    conversation_messages = []
+    try:
+        # 実際のAI会話を呼び出し
+        if len(vector_store_ids) >= 2:
+            conversation_messages = ai_chat_between_characters(vector_store_ids)
+        else:
+            # フォールバック用の固定メッセージ
+            conversation_messages = [
+                "キャラA: こんにちは！",
+                "キャラB: こんにちは！元気ですか？",
+                "キャラA: はい、元気です。今日はいい天気ですね。",
+                "キャラB: そうですね。こんな日はお散歩したくなります。",
+                "キャラA: いいアイデアですね！一緒に歩きませんか？",
+                "キャラB: ぜひ！楽しそうです。"
+            ]
+        
+        response_data = {
+            "status": "success",
+            "messages": conversation_messages
+        }
+        return jsonify(response_data), 200
+        
+    except Exception as e:
+        print(f"AI会話エラー: {e}")
+        response_data = {
+            "status": "error",
+            "message": str(e),
+            "messages": []
+        }
+        return jsonify(response_data), 500
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)

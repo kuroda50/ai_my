@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 
 class AIService {
@@ -171,6 +172,44 @@ class AIService {
       print('Exception during AI chat: $e');
       return null;
     }
+  }
+  
+  // Start AI conversation between characters
+  Future<Stream<String>> startAIConversation(List<String> vectorStoreIds) async {
+    final controller = StreamController<String>();
+    
+    try {
+      final requestData = {
+        "vector_store_ids": vectorStoreIds,
+      };
+      
+      final response = await http.post(
+        Uri.parse('$baseUrl/ai_conversation'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestData),
+      );
+      
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        final messages = responseData['messages'] as List<dynamic>?;
+        
+        if (messages != null) {
+          // メッセージを順番に送信
+          for (int i = 0; i < messages.length; i++) {
+            await Future.delayed(Duration(milliseconds: 1500 * (i + 1)));
+            controller.add(messages[i].toString());
+          }
+        }
+      } else {
+        controller.addError('AI会話の開始に失敗しました: ${response.statusCode}');
+      }
+    } catch (e) {
+      controller.addError('AI会話エラー: $e');
+    } finally {
+      controller.close();
+    }
+    
+    return controller.stream;
   }
   
   // Check if backend is available
