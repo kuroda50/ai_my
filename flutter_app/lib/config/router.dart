@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/screens/test/test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_app/screens/a.dart';
 import 'package:flutter_app/screens/b.dart';
@@ -29,6 +30,10 @@ final router = GoRouter(
         GoRoute(
           path: '/settings',
           pageBuilder: (context, state) => NoTransitionPage(child: C()),
+        ),
+        GoRoute(
+          path: '/test',
+          pageBuilder: (context, state) => NoTransitionPage(child: Test()),
         ),
       ],
     ),
