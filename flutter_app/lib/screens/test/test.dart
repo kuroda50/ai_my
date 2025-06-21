@@ -41,7 +41,7 @@ Future<void> sendCharacterRequest() async {
   };
 
   // APIのURL（ローカル環境でエミュレータを使う場合は要注意）
-  final uri = Uri.parse("http://192.168.26.105:5000/generate_character");
+  final uri = Uri.parse("http://192.168.26.105:5001/generate_character");
 
   try {
     final response = await http.post(

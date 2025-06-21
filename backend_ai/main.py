@@ -67,4 +67,4 @@ def call_ai_chat():
     return jsonify(response_data), 200
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5001, debug=True)
