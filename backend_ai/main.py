@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from module.generate_character_conversation  import generate_character_conversation
 from module.generate_character_settings  import generate_character_settings
@@ -7,6 +7,7 @@ from module.upload_content  import upload_txt_file
 from module.ai_chat  import ai_chat_between_characters
 from module.get_next_character_index import get_next_character_index
 from module.extract_core_philosophy import extract_core_philosophy
+import json
 
 app = Flask(__name__)
 CORS(app)
@@ -48,7 +49,7 @@ def generate_character():
     vector_store_id = vector_store_details.get("id", "")
     # ベクトルストアにデータをアップロードする
     text_file_path = [f"backend_ai/data/character/{character_index}/settings.txt", 
-                    f"backend_ai/data/character/{character_index}/conversation.txt",
+                    # f"backend_ai/data/character/{character_index}/conversation.txt",
                     f"backend_ai/data/character/{character_index}/philosophy.txt",]
     upload_txt_file(text_file_path, vector_store_id)
     
@@ -62,6 +63,14 @@ def generate_character():
 
 '''リクエストボディは以下のJSON形式
 {
+    "event": {
+        "when": "今日の朝",
+        "where": "大学の教室",
+        "who": "教授と僕",
+        "what": "教授に怒られた",
+        "why": "授業中にYoutubeを見ていたから",
+        "how": "みんなの前で軽く注意された",
+    },
     "vector_store_id: ["vs_A_id", "vs_B_id"]
 }
 '''
@@ -70,13 +79,18 @@ def call_ai_chat():
     print("ai_chatが呼ばれたよ")
     data = request.get_json()
     vector_store_id = data.get("vector_store_id", [])
-    ai_chat_between_characters(vector_store_id)
+    evnet = data.get("event", {})
+    messages = ai_chat_between_characters(vector_store_id, evnet)
     
     response_data = {
+        "messages": messages,
         "status": "success",
-        "message": "AI chat response generated successfully."
     }
-    return jsonify(response_data), 200
+
+    json_str = json.dumps(response_data, ensure_ascii=False)
+    return Response(json_str, content_type="application/json; charset=utf-8"), 200
+
+    # return jsonify(response_data), 200
 
 '''リクエストボディは以下のJSON形式
 {
