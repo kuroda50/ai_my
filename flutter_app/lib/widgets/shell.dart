@@ -79,7 +79,7 @@ class Shell extends StatelessWidget {
         context.go('/library');
         break;
       case 4:
-        context.go('/settings');
+        context.go('/profile');
         break;
     }
   }

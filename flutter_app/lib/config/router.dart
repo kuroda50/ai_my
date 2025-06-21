@@ -7,6 +7,7 @@ import 'package:flutter_app/screens/b.dart';
 import 'package:flutter_app/screens/c.dart';
 import 'package:flutter_app/screens/library.dart';
 import 'package:flutter_app/widgets/shell.dart';
+import 'package:flutter_app/screens/ore2_profile.dart';
 
 
 
@@ -44,6 +45,10 @@ final router = GoRouter(
         GoRoute(
           path: '/test',
           pageBuilder: (context, state) => NoTransitionPage(child: Test()),
+        ),
+         GoRoute(
+          path: '/profile',
+          pageBuilder: (context, state) => NoTransitionPage(child: ProfileScreen()),
         ),
       ],
     ),
