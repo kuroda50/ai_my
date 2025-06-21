@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'complex_form.dart';
+import '../widgets/emotion_slider.dart';
+import '../widgets/question_field.dart';
 
 class A extends StatefulWidget {
   const A({super.key});
@@ -117,42 +120,42 @@ class _AState extends State<A> with TickerProviderStateMixin {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildQuestionField(
+                    QuestionField(
                       label: 'Who (誰が)',
                       controller: _whoController,
                       hint: '関わった人物を記入してください',
                       icon: Icons.person,
                     ),
                     const SizedBox(height: 16),
-                    _buildQuestionField(
+                    QuestionField(
                       label: 'What (何を)',
                       controller: _whatController,
                       hint: '何が起こったかを記入してください',
                       icon: Icons.event,
                     ),
                     const SizedBox(height: 16),
-                    _buildQuestionField(
+                    QuestionField(
                       label: 'When (いつ)',
                       controller: _whenController,
                       hint: 'いつ起こったかを記入してください',
                       icon: Icons.access_time,
                     ),
                     const SizedBox(height: 16),
-                    _buildQuestionField(
+                    QuestionField(
                       label: 'Where (どこで)',
                       controller: _whereController,
                       hint: 'どこで起こったかを記入してください',
                       icon: Icons.location_on,
                     ),
                     const SizedBox(height: 16),
-                    _buildQuestionField(
+                    QuestionField(
                       label: 'Why (なぜ)',
                       controller: _whyController,
                       hint: 'なぜ起こったかを記入してください',
                       icon: Icons.help_outline,
                     ),
                     const SizedBox(height: 16),
-                    _buildQuestionField(
+                    QuestionField(
                       label: 'How (どのように)',
                       controller: _howController,
                       hint: 'どのように起こったかを記入してください',
@@ -208,7 +211,7 @@ class _AState extends State<A> with TickerProviderStateMixin {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      _buildEmotionSlider(
+                      EmotionSlider(
                         label: '喜 (Joy)',
                         value: _joyLevel,
                         color: Colors.orange,
@@ -216,7 +219,7 @@ class _AState extends State<A> with TickerProviderStateMixin {
                         onChanged: (value) => setState(() => _joyLevel = value),
                       ),
                       const SizedBox(height: 24),
-                      _buildEmotionSlider(
+                      EmotionSlider(
                         label: '怒 (Anger)',
                         value: _angerLevel,
                         color: Colors.red,
@@ -224,7 +227,7 @@ class _AState extends State<A> with TickerProviderStateMixin {
                         onChanged: (value) => setState(() => _angerLevel = value),
                       ),
                       const SizedBox(height: 24),
-                      _buildEmotionSlider(
+                      EmotionSlider(
                         label: '哀 (Sadness)',
                         value: _sadnessLevel,
                         color: Colors.blue,
@@ -232,7 +235,7 @@ class _AState extends State<A> with TickerProviderStateMixin {
                         onChanged: (value) => setState(() => _sadnessLevel = value),
                       ),
                       const SizedBox(height: 24),
-                      _buildEmotionSlider(
+                      EmotionSlider(
                         label: '楽 (Pleasure)',
                         value: _pleasureLevel,
                         color: Colors.green,
@@ -270,70 +273,6 @@ class _AState extends State<A> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildEmotionSlider({
-    required String label,
-    required double value,
-    required Color color,
-    required IconData icon,
-    required ValueChanged<double> onChanged,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: color, size: 28),
-              const SizedBox(width: 12),
-              Text(
-                label,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  '${value.round()}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              activeTrackColor: color,
-              thumbColor: color,
-              overlayColor: color.withOpacity(0.2),
-              trackHeight: 6,
-            ),
-            child: Slider(
-              value: value,
-              min: 0,
-              max: 100,
-              divisions: 100,
-              onChanged: onChanged,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _checkAndFlipCard() {
     if (_formKey.currentState!.validate() && _isAllFieldsFilled()) {
       setState(() {
@@ -359,73 +298,33 @@ class _AState extends State<A> with TickerProviderStateMixin {
            _howController.text.isNotEmpty;
   }
 
-  Widget _buildQuestionField({
-    required String label,
-    required TextEditingController controller,
-    required String hint,
-    required IconData icon,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, color: Theme.of(context).primaryColor),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          decoration: InputDecoration(
-            hintText: hint,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
-          ),
-          maxLines: 2,
-        ),
-      ],
-    );
-  }
 
   void _saveRecord() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('記録完了'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('感情記録を保存しました:'),
-            const SizedBox(height: 8),
-            Text('喜: ${_joyLevel.round()}'),
-            Text('怒: ${_angerLevel.round()}'),
-            Text('哀: ${_sadnessLevel.round()}'),
-            Text('楽: ${_pleasureLevel.round()}'),
-          ],
+    // 5W1Hのデータを収集
+    final basicData = {
+      'who': _whoController.text,
+      'what': _whatController.text,
+      'when': _whenController.text,
+      'where': _whereController.text,
+      'why': _whyController.text,
+      'how': _howController.text,
+    };
+
+    // 感情データを収集
+    final emotionData = {
+      'joy': _joyLevel,
+      'anger': _angerLevel,
+      'sadness': _sadnessLevel,
+      'pleasure': _pleasureLevel,
+    };
+
+    // コンプレックス入力フォーム画面に遷移
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ComplexForm(
+          basicData: basicData,
+          emotionData: emotionData,
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _resetForm();
-            },
-            child: const Text('OK'),
-          ),
-        ],
       ),
     );
   }

@@ -1,4 +1,4 @@
-def generate_conversation_prompt(character_definition: str) -> str:
+def generate_conversation_prompt(character_definition: str, character_philosophy :str) -> str:
     prompt = f"""
         あなたはAIの会話例を作成する専門エージェントです。
 
@@ -15,6 +15,9 @@ def generate_conversation_prompt(character_definition: str) -> str:
 
         【キャラクター設定】  
         {character_definition}
+        
+        【キャラクターの思想・補足】
+        {character_philosophy}
 
         出力を始めてください。
         """

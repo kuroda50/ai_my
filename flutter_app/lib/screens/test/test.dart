@@ -31,11 +31,26 @@ class Test extends StatelessWidget {
 Future<void> sendCharacterRequest() async {
   // 送信するデータ
   final Map<String, dynamic> requestData = {
-    "vector_store_id": ["vs_6854d5b3c3588191baf34659567e1953", "vs_685561c83bcc81918ad73a93950cb461"]
+    "vector_store_id": ["vs_68564b7e41a48191a1a3c3d34a3b21a4", "vs_68564c49c6a4819190414d44ddaedeea"]
   };
-
   // APIのURL（ローカル環境でエミュレータを使う場合は要注意）
-  final uri = Uri.parse("http://localhost:5000/ai_chat");
+
+  final uri = Uri.parse("http://192.168.26.105:5001/generate_character");
+
+
+  // final Map<String, dynamic> requestData = {
+  //   "q1_answer": "社会に適合できない。",
+  //   "q2_answer": "人にすごく迷惑をかけてしまう",
+  //   "q3_answer": "うーん。高校生くらいかなあ。授業中にずっと座って拘束されるのが苦手。静かに目立たないようにするのが苦手",
+  //   "q4_answer": "最近は感じてない。自由な環境だからかなり楽になったと思う。ただ追いつめられると、かなりきつい。授業などで座ることを強要されたり、静かに当たり障りのないことをしないといけな状況は苦手",
+  //   "q5_answer": "恐怖。今すぐ苦痛から解放されたい、と強く感じる",
+  //   "q6_answer": "天邪鬼。やってもやらなくてもいいという状況が一番好き。追い詰められたら逃げる。バイトをバックレたりする",
+  //   "q7_answer": "ちょっと変な人だと思われてるとは思う。今の環境はすごく楽なので、特に問題ないが、無難な相槌を打つのが苦手",
+  //   "q8_answer": "自分にとても正直だから、すぐ行動できる。やりたいと思ったらとことんやれる  ",
+  //   "q9_answer": "治せるなら治したいな。でも、できるだけ快適な環境に居続けて、自分の好きなことをしていたい。",
+  // };
+  // final uri = Uri.parse("http://localhost:5000/generate_character");
+
 
   try {
     final response = await http.post(
