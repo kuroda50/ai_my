@@ -4,7 +4,7 @@ from module.generate_character_conversation  import generate_character_conversat
 from module.generate_character_settings  import generate_character_settings
 from module.vector_store  import create_vector_store
 from module.upload_content  import upload_txt_file
-from module.ai_chat  import ai_chat
+from module.ai_chat  import ai_chat_between_characters
 
 app = Flask(__name__)
 CORS(app)
@@ -30,7 +30,7 @@ def generate_character():
     conversation_data = generate_character_conversation(character_settings, character_index)
     print("会話データ:", conversation_data)
     # ベクトルストアを作成する
-    vector_store_details = create_vector_store("character_${character_index}")
+    vector_store_details = create_vector_store(f"character_${character_index}")
     vector_store_id = vector_store_details.get("id", "")
     # ベクトルストアにデータをアップロードする
     if(character_index == 0):
@@ -51,14 +51,15 @@ def generate_character():
 
 '''リクエストボディは以下のJSON形式
 {
-    "character_id: ["character1", "character2"]
+    "vector_store_id: ["vs_A_id", "vs_B_id"]
 }
 '''
 @app.route("/ai_chat", methods=["POST"])
 def call_ai_chat():
     print("ai_chatが呼ばれたよ")
     data = request.get_json()
-    ai_chat(data)
+    vector_store_id = data.get("vector_store_id", [])
+    ai_chat_between_characters(vector_store_id)
     
     response_data = {
         "status": "success",
