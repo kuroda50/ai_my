@@ -31,18 +31,11 @@ class Test extends StatelessWidget {
 Future<void> sendCharacterRequest() async {
   // 送信するデータ
   final Map<String, dynamic> requestData = {
-    "character_index": 0,
-    "q0_answer": "20歳、男、大学生",
-    "q1_answer":
-        "死にたいと思うことが多くて悩んでる。将来生きていける気がしない。働いて稼げる予感がしない。スマホやゲームで一時的な快楽を得ようと、ずっと続けてしまう。やらないといけないことがあるのに、やってない状態が続いて苦しくなる",
-    "q2_answer": "やるべきことがやれない。休日を有効活用できない。休み方がわからない",
-    "q3_answer": "あまりないかも。刹那的な快楽を得ようとずっとスマホやゲームをしているから、考える暇がない",
-    "q4_answer": "やるやる言いながら何もやってない人",
-    "q5_answer": "寮に入って、人と話す機会が多い状況になるとかかなあ？",
+    "vector_store_id": ["vs_6854d5b3c3588191baf34659567e1953", "vs_685561c83bcc81918ad73a93950cb461"]
   };
 
   // APIのURL（ローカル環境でエミュレータを使う場合は要注意）
-  final uri = Uri.parse("http://192.168.26.105:5000/generate_character");
+  final uri = Uri.parse("http://localhost:5000/ai_chat");
 
   try {
     final response = await http.post(
