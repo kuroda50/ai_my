@@ -184,18 +184,24 @@ class _ComplexFormState extends State<ComplexForm> {
           _saveCharacterToLocal(newSelf);
 
           // Navigate to cafe page (b.dart) through go_router
-          Navigator.of(context).pop(); // 現在のページを閉じる
-          Navigator.of(context).pop(); // ホーム画面に戻る
-          context.go('/cafe');
+          if (context.mounted) {
+            context.go('/cafe');
+          }
         } else {
-          _showErrorDialog('AIキャラクターの生成に失敗しました。もう一度お試しください。');
+          if (context.mounted) {
+            _showErrorDialog('AIキャラクターの生成に失敗しました。もう一度お試しください。');
+          }
         }
       } catch (e) {
-        _showErrorDialog('エラーが発生しました: $e');
+        if (context.mounted) {
+          _showErrorDialog('エラーが発生しました: $e');
+        }
       } finally {
-        setState(() {
-          _isGeneratingCharacter = false;
-        });
+        if (mounted) {
+          setState(() {
+            _isGeneratingCharacter = false;
+          });
+        }
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

@@ -7,6 +7,7 @@ import 'package:flutter_app/screens/b.dart';
 import 'package:flutter_app/screens/c.dart';
 import 'package:flutter_app/screens/library.dart';
 import 'package:flutter_app/widgets/shell.dart';
+import 'package:flutter_app/screens/complex_form.dart';
 
 
 
@@ -42,8 +43,11 @@ final router = GoRouter(
           pageBuilder: (context, state) => NoTransitionPage(child: C()),
         ),
         GoRoute(
-          path: '/test',
-          pageBuilder: (context, state) => NoTransitionPage(child: Test()),
+          path: '/comp',
+          pageBuilder: (context, state) => NoTransitionPage(child: ComplexForm(
+            basicData: {},
+            emotionData: {},
+          )),
         ),
       ],
     ),

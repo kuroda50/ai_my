@@ -40,8 +40,8 @@ def generate_character():
     
     # 会話例を生成すると、没個性になったので削除
     # 会話生成
-    # conversation_data = generate_character_conversation(character_settings, character_index, character_philosophy)
-    # print("会話データ:", conversation_data)
+    conversation_data = generate_character_conversation(character_settings, character_index, character_philosophy)
+    print("会話データ:", conversation_data)
     
     # ベクトルストアを作成する
     vector_store_details = create_vector_store(f"character_${character_index}")
@@ -54,7 +54,7 @@ def generate_character():
     
     response_data = {
         "character_settings": character_settings,
-        # "conversation_data": conversation_data,
+        "conversation_data": conversation_data,
         "vector_store_id": vector_store_id,
         "status": "success",
     }

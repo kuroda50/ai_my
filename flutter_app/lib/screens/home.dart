@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'a.dart';
-import 'complex_form.dart';
 
 class Home extends StatelessWidget {
   const Home({super.key});
@@ -51,10 +49,7 @@ class Home extends StatelessWidget {
               height: 80,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const A()),
-                  );
+                  context.go('/journal');
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange,
@@ -89,15 +84,7 @@ class Home extends StatelessWidget {
               height: 80,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ComplexForm(
-                        basicData: {},
-                        emotionData: {},
-                      ),
-                    ),
-                  );
+                  context.go('/comp');
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.teal,
