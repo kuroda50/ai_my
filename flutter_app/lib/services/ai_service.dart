@@ -101,6 +101,28 @@ class AIService {
           print('Debug: Response parsed successfully');
           print('Debug: Response data type = ${responseData.runtimeType}');
           print('Debug: Response data keys = ${responseData is Map ? responseData.keys.toList() : 'Not a Map'}');
+          
+          // null値チェックを追加
+          if (responseData is Map) {
+            // 必要なキーが存在し、nullでないことを確認
+            final characterSettings = responseData['character_settings']?.toString() ?? '';
+            final conversationData = responseData['conversation_data']?.toString() ?? '';
+            final vectorStoreId = responseData['vector_store_id']?.toString() ?? '';
+            final status = responseData['status']?.toString() ?? '';
+            
+            print('Debug: characterSettings is null: ${responseData['character_settings'] == null}');
+            print('Debug: conversationData is null: ${responseData['conversation_data'] == null}');
+            print('Debug: vectorStoreId is null: ${responseData['vector_store_id'] == null}');
+            
+            // 安全なデータを返す
+            return {
+              'character_settings': characterSettings,
+              'conversation_data': conversationData,
+              'vector_store_id': vectorStoreId,
+              'status': status,
+            };
+          }
+          
           return responseData;
         } catch (jsonError) {
           print('Error parsing JSON response: $jsonError');

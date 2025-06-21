@@ -7,6 +7,7 @@ import 'package:flutter_app/screens/b.dart';
 import 'package:flutter_app/screens/c.dart';
 import 'package:flutter_app/screens/library.dart';
 import 'package:flutter_app/widgets/shell.dart';
+import 'package:flutter_app/screens/complex_form.dart';
 
 
 
@@ -37,14 +38,16 @@ final router = GoRouter(
           path: '/library',
           pageBuilder: (context, state) => NoTransitionPage(child: Library()),
         ),
-        // GoRoute(
-        //   path: '/settings',
-        //   pageBuilder: (context, state) => NoTransitionPage(child: C()),
-        // ),
-        // 一時的にルートを変更
         GoRoute(
           path: '/settings',
-          pageBuilder: (context, state) => NoTransitionPage(child: Test()),
+          pageBuilder: (context, state) => NoTransitionPage(child: C()),
+        ),
+        GoRoute(
+          path: '/comp',
+          pageBuilder: (context, state) => NoTransitionPage(child: ComplexForm(
+            basicData: {},
+            emotionData: {},
+          )),
         ),
       ],
     ),
