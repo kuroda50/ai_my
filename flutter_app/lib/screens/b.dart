@@ -768,10 +768,29 @@ class _BState extends State<B> with TickerProviderStateMixin {
     setState(() {
       _isAIConversationActive = true;
       _currentConversation.clear();
+      _currentEvent = null; // 初期化
     });
 
     // 会話開始の表示
     print('二人のキャラクターが出会いました: ${person1.name} と ${person2.name}');
+    
+    // キャラクターの詳細情報を取得
+    final character1Data = {
+      'name': person1.name,
+      'complexData': person1.complexData,
+      'aiCharacterSettings': person1.aiCharacterSettings,
+      'vectorStoreId': person1.vectorStoreId,
+    };
+    
+    final character2Data = {
+      'name': person2.name,
+      'complexData': person2.complexData,
+      'aiCharacterSettings': person2.aiCharacterSettings,
+      'vectorStoreId': person2.vectorStoreId,
+    };
+    
+    print('キャラクター1データ: $character1Data');
+    print('キャラクター2データ: $character2Data');
     
     // vectorStoreIdを持つキャラクターを検索
     final vectorStoreIds = <String>[];
@@ -787,15 +806,34 @@ class _BState extends State<B> with TickerProviderStateMixin {
     print('vectorStoreIds数: ${vectorStoreIds.length}');
 
     if (vectorStoreIds.length >= 2) {
-      // ランダムなイベントを生成
-      final randomEvent = _generateRandomEvent();
-      print('生成されたイベント: $randomEvent');
+      // 最新のイベントを取得
+      final latestEvent = await _getLatestEvent();
+      print('取得したイベント: $latestEvent');
+      
+      // イベント情報を保存
+      setState(() {
+        _currentEvent = latestEvent;
+      });
       
       try {
         print('AIService.startAIConversationを呼び出します...');
+        
+        // キャラクターデータを含めて会話APIを呼び出す
         final conversationResult = await AIService.startAIConversation(
           vectorStoreIds, 
-          randomEvent
+          latestEvent,
+          characterData: [
+            {
+              'name': person1.name,
+              'complexData': person1.complexData,
+              'settings': person1.aiCharacterSettings,
+            },
+            {
+              'name': person2.name,
+              'complexData': person2.complexData,
+              'settings': person2.aiCharacterSettings,
+            }
+          ]
         );
         
         print('API応答: $conversationResult');
@@ -805,7 +843,7 @@ class _BState extends State<B> with TickerProviderStateMixin {
           print('受信したメッセージ数: ${messages.length}');
           
           // 会話ログを保存
-          await _saveConversationLog(person1, person2, messages, randomEvent);
+          await _saveConversationLog(person1, person2, messages, latestEvent);
           
           // 会話を段階的に表示
           _startConversationDisplay(messages);
@@ -876,6 +914,7 @@ class _BState extends State<B> with TickerProviderStateMixin {
     setState(() {
       _isAIConversationActive = false;
       _currentConversation.clear();
+      _currentEvent = null; // イベント情報をクリア
     });
     _conversationTimer?.cancel();
     
@@ -908,35 +947,48 @@ class _BState extends State<B> with TickerProviderStateMixin {
     }
   }
 
-  Map<String, String> _generateRandomEvent() {
-    final events = [
-      {
+  Future<Map<String, String>> _getLatestEvent() async {
+    try {
+      // LocalStorageからイベントを取得
+      final events = await LocalStorage.getEvents();
+      
+      if (events.isEmpty) {
+        // イベントがない場合はデフォルトイベントを返す
+        return {
+          'who': '友達',
+          'what': '新しいカフェを見つけた',
+          'when': '昨日',
+          'where': '駅前',
+          'why': '美味しいコーヒーが飲みたくて',
+          'how': '偶然通りかかって'
+        };
+      }
+      
+      // 最新のイベントを取得（リストの最後のアイテム）
+      final latestEvent = events.last;
+      final basicData = latestEvent['basicData'] as Map<String, dynamic>;
+      
+      // Map<String, String>に変換して返す
+      return {
+        'who': basicData['who'] as String,
+        'what': basicData['what'] as String,
+        'when': basicData['when'] as String,
+        'where': basicData['where'] as String,
+        'why': basicData['why'] as String,
+        'how': basicData['how'] as String,
+      };
+    } catch (e) {
+      print('イベント取得エラー: $e');
+      // エラーが発生した場合はデフォルトイベントを返す
+      return {
         'who': '友達',
         'what': '新しいカフェを見つけた',
         'when': '昨日',
         'where': '駅前',
         'why': '美味しいコーヒーが飲みたくて',
         'how': '偶然通りかかって'
-      },
-      {
-        'who': '同僚',
-        'what': 'プレゼンテーションで失敗した',
-        'when': '今朝',
-        'where': '会議室',
-        'why': '準備不足だった',
-        'how': '緊張してしまって'
-      },
-      {
-        'who': '家族',
-        'what': '久しぶりに連絡をくれた',
-        'when': '先週',
-        'where': '実家',
-        'why': '心配してくれて',
-        'how': '電話で'
-      },
-    ];
-    
-    return events[random.nextInt(events.length)];
+      };
+    }
   }
 
   Future<void> _saveConversationLog(
@@ -964,6 +1016,9 @@ class _BState extends State<B> with TickerProviderStateMixin {
       print('キャラクターが足りません');
     }
   }
+
+  // イベント情報を保存する変数
+  Map<String, String>? _currentEvent;
 
   Widget _buildConversationOverlay() {
     print('会話オーバーレイを構築中。会話アクティブ: $_isAIConversationActive, メッセージ数: ${_currentConversation.length}');
@@ -1008,6 +1063,34 @@ class _BState extends State<B> with TickerProviderStateMixin {
                 ),
               ],
             ),
+            if (_currentEvent != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.amber[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.amber[200]!),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'イベント: ${_currentEvent!['what']}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${_currentEvent!['who']}が${_currentEvent!['when']}、${_currentEvent!['where']}で${_currentEvent!['why']}、${_currentEvent!['how']}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 300),
