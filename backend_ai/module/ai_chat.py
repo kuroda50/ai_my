@@ -14,17 +14,27 @@ def ai_chat_between_characters(vector_store_ids: list[str]) -> None:
     """
     print("=== AI同士の会話を開始します ===\n")
 
-    # 初期入力
-    message = "こんにちは"
+    # 初期イベント文をセット
+    # message = (
+    #     "ある日、シェアオフィスに新しく入ってきた同僚が、私と同じように『社会の枠に合わない』と感じている人だったんだ。"
+    #     "その人の自由で飾らない姿や、ちょっとした気配りで周囲と調和しようとする感じに、なんかすごく影響受けた。"
+    #     "あと、この前参加した『みんな違っていい』っていうテーマのワークショップでも、自分の特性を恥じるより大事にしていいんだって思えるようになって。"
+    #     "……君は、こういうのどう思う？"
+    # )
+    message = "ごはん美味しかった。あ、財布忘れちゃった。どうしよ"
     previous_response_id = None
 
     # キャラの交互ターン（0→A, 1→B）
-    for i in range(5):
-        # キャラAの発言
+    for i in range(4):
         print(f"\n[Turn {i+1}-A] キャラA:")
         response_a = client.responses.create(
             model="gpt-4o-mini",
-            input="以下の発言にキャラAとして応答してください。\n相手の発言：" + message,
+            input="""あなたはキャラクターAです。
+                    以下の「思想」に基づいて、キャラクターAとして自然に話してください。
+                    キャラになりきって、友達に話しかけるように砕けた口調で、自然に答えてください。
+                    - 思想: 学歴に囚われず自分の価値を見出す
+                    - 補足: 学歴の劣等感から他者を避けがちだが、学歴以外の部分で努力し、自分自身の価値を高めようとしている。
+                    相手のセリフ: """ + message,
             tools=[{
                 "type": "file_search",
                 "vector_store_ids": [vector_store_ids[0]],
@@ -37,11 +47,16 @@ def ai_chat_between_characters(vector_store_ids: list[str]) -> None:
         print(message)
         previous_response_id = response_a.id
 
-        # キャラBの発言
         print(f"\n[Turn {i+1}-B] キャラB:")
         response_b = client.responses.create(
             model="gpt-4o-mini",
-            input="以下の発言にキャラBとして応答してください。\n相手の発言：" + message,
+            input="""あなたはキャラクターBです。
+                    以下の「思想」に基づいて、キャラクターBとして自然に話してください。
+                    キャラになりきって、友達に話しかけるように砕けた口調で、自然に答えてください。
+                    - 思想: 自由を追求し、自己に正直に生きる
+                    - 補足: 彼/彼女は社会の期待に縛られることを恐れ、自分の自然な感情や欲望に忠実であることを重視しています。そのため、自分に合った環境を求め、強制される状況からは逃げる傾向があります。
+                    出力単語数は80～120語程度にしてください。
+                    相手のセリフ: """ + message,
             tools=[{
                 "type": "file_search",
                 "vector_store_ids": [vector_store_ids[1]],
@@ -55,63 +70,3 @@ def ai_chat_between_characters(vector_store_ids: list[str]) -> None:
         previous_response_id = response_b.id
 
     print("\n=== 会話終了 ===")
-
-
-
-
-# from dotenv import load_dotenv
-# from openai import OpenAI
-
-# # .env
-# load_dotenv()
-
-# # OpenAI client
-# client = OpenAI()
-
-# # Vector Store ID
-# VECTOR_STORE_ID = "vs_6853b7ee203c81919e2ba157763f3eab"
-
-# def ai_chat(vector_store_id: str):
-#     """
-#     AIどうしのチャットを生成する関数
-#     """
-    
-#     # 会話履歴の初期化
-#     count = 0
-#     previous_response_id = None
-
-#     for i in range(10):  # 2キャラクターの会話をシミュレート
-#         # 会話を入力
-#         print("---")
-#         input_message = input(f"[{count}]あなた: ")
-#         if input_message.lower() == "終了":
-#             break
-
-#         # 生成AIが回答を生成
-#         response = client.responses.create(
-#             model="gpt-4o-mini",
-#             input="fileを参照しながらそのキャラになりきって発言してください\nユーザーの発言：" + input_message,
-#             tools=[{
-#                 "type": "file_search",
-#                 "vector_store_ids": [vector_store_id],
-#                 "max_num_results": 5
-#             }],
-#             include=["file_search_call.results"],
-#             previous_response_id=previous_response_id
-#         )
-
-#         # Extract annotations from the response
-#         annotations = None
-#         if len(response.output) > 1:
-#             annotations = response.output[1].content[0].annotations
-
-#         # Get top-k retrieved filenames
-#         retrieved_files = set([result.filename for result in annotations]) if annotations else None
-
-#         print(f'Files used: {retrieved_files}')
-#         print(f"[{count}]AI:\n")
-#         print(response.output_text)
-
-#         # 会話履歴を更新
-#         previous_response_id = response.id
-#         count += 1
