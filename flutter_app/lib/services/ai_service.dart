@@ -77,6 +77,15 @@ class AIService {
       print('Debug: basicData keys = ${basicData.keys.toList()}');
       print('Debug: emotionData keys = ${emotionData.keys.toList()}');
       print('Debug: complexData keys = ${complexData.keys.toList()}');
+      print('Debug: baseUrl = $baseUrl');
+      
+      // バックエンド接続確認
+      final backendOk = await checkBackendStatus();
+      print('Debug: バックエンド接続確認結果 = $backendOk');
+      if (!backendOk) {
+        print('Debug: バックエンドに接続できません');
+        throw Exception('Backend not available for character generation');
+      }
       
       final requestData = _convertToBackendFormat(basicData, emotionData, complexData);
       print('Debug: requestData created successfully');
@@ -147,6 +156,62 @@ class AIService {
       return null;
     }
   }
+
+  // Generate Profile Character
+  static Future<Map<String, dynamic>?> generateProfileCharacter(Map<String, String> profileData) async {
+    try {
+      print('Debug: プロフィールキャラクター生成開始');
+      print('Debug: profileData = $profileData');
+      print('Debug: baseUrl = $baseUrl');
+      
+      // バックエンド接続確認
+      final backendOk = await checkBackendStatus();
+      print('Debug: バックエンド接続確認結果 = $backendOk');
+      if (!backendOk) {
+        print('Debug: バックエンドに接続できません');
+        throw Exception('Backend not available for profile generation');
+      }
+      
+      final requestData = {
+        "profile_data": profileData,
+      };
+      
+      print('Debug: Request data = $requestData');
+      
+      final response = await http.post(
+        Uri.parse('$baseUrl/generate_profile_character'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestData),
+      );
+      
+      print('Debug: Response status code = ${response.statusCode}');
+      print('Debug: Response body = ${response.body}');
+      
+      if (response.statusCode == 200) {
+        try {
+          final responseData = jsonDecode(response.body);
+          print('Debug: プロフィールキャラクター生成成功');
+          
+          return {
+            'character_settings': responseData['character_settings']?.toString() ?? '',
+            'conversation_data': responseData['conversation_data']?.toString() ?? '',
+            'vector_store_id': responseData['vector_store_id']?.toString() ?? '',
+            'status': responseData['status']?.toString() ?? '',
+          };
+        } catch (jsonError) {
+          print('Error parsing JSON response: $jsonError');
+          return null;
+        }
+      } else {
+        print('Error generating profile character: ${response.statusCode}');
+        print('Response body: ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('Exception during profile character generation: $e');
+      return null;
+    }
+  }
   
   // Start AI chat
   static Future<Map<String, dynamic>?> startAIChat(List<String> characterIds) async {
@@ -187,6 +252,14 @@ class AIService {
       print('AIService: characterData = $characterData');
       print('AIService: baseUrl = $baseUrl');
       
+      // バックエンド接続確認
+      final backendOk = await checkBackendStatus();
+      print('AIService: バックエンド接続確認結果 = $backendOk');
+      if (!backendOk) {
+        print('AIService: バックエンドに接続できません');
+        throw Exception('Backend not available');
+      }
+      
       final requestData = {
         "vector_store_ids": vectorStoreIds,
         "event": event,
@@ -195,6 +268,11 @@ class AIService {
       
       print('AIService: リクエストデータ = $requestData');
       
+      print('AIService: HTTPリクエストを送信中...');
+      print('AIService: URL = $baseUrl/ai_conversation');
+      print('AIService: Headers = {"Content-Type": "application/json"}');
+      print('AIService: Body = ${jsonEncode(requestData)}');
+      
       final response = await http.post(
         Uri.parse('$baseUrl/ai_conversation'),
         headers: {'Content-Type': 'application/json'},
@@ -202,6 +280,7 @@ class AIService {
       ).timeout(const Duration(seconds: 30));
       
       print('AIService: レスポンス受信 - ステータス: ${response.statusCode}');
+      print('AIService: レスポンスヘッダー: ${response.headers}');
       print('AIService: レスポンスボディ: ${response.body}');
       
       if (response.statusCode == 200) {
@@ -223,12 +302,14 @@ class AIService {
       }
     } catch (e) {
       print('AIService: 例外発生 - $e');
+      print('AIService: 例外タイプ - ${e.runtimeType}');
+      print('AIService: Stack trace - ${StackTrace.current}');
       
       // フォールバック用のダミーデータを返す
       return {
         'status': 'fallback',
         'messages': [
-          'システム: 接続エラーが発生しました',
+          'システム: 接続エラーが発生しました ($e)',
           'システム: デモ会話を表示します'
         ]
       };
@@ -238,10 +319,13 @@ class AIService {
   // Check if backend is available
   static Future<bool> checkBackendStatus() async {
     try {
-      final response = await http.get(Uri.parse(baseUrl));
+      print('Backend接続チェック開始: $baseUrl');
+      final response = await http.get(Uri.parse(baseUrl)).timeout(const Duration(seconds: 5));
+      print('Backend接続チェック結果: ステータス ${response.statusCode}');
       return response.statusCode == 200 || response.statusCode == 404; // 404 is OK for Flask root
     } catch (e) {
-      print('Backend connection error: $e');
+      print('Backend接続エラー詳細: $e');
+      print('Backend接続エラータイプ: ${e.runtimeType}');
       return false;
     }
   }

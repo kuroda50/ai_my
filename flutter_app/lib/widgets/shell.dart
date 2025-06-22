@@ -17,14 +17,12 @@ class Shell extends StatelessWidget {
     int currentIndex = 0;
     if (location.startsWith('/home')) {
       currentIndex = 0;
-    } else if (location.startsWith('/journal')) {
-      currentIndex = 1;
     } else if (location.startsWith('/cafe')) {
-      currentIndex = 2;
+      currentIndex = 1;
     } else if (location.startsWith('/library')) {
+      currentIndex = 2;
+    } else if (location.startsWith('/profile')) {
       currentIndex = 3;
-    } else if (location.startsWith('/settings')) {
-      currentIndex = 4;
     }
     return Scaffold(
       body: child,
@@ -40,11 +38,6 @@ class Shell extends StatelessWidget {
             label:'ホーム'
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.book_outlined),
-            activeIcon: Icon(Icons.book),
-            label: '日誌',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.local_cafe_outlined),
             activeIcon: Icon(Icons.local_cafe),
             label: 'カフェ',
@@ -55,31 +48,28 @@ class Shell extends StatelessWidget {
             label: 'ライブラリ',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            activeIcon: Icon(Icons.settings),
-            label: '設定',
+            icon: Icon(Icons.person_off_outlined),
+            activeIcon: Icon(Icons.person),
+            label: 'プロフィール',
           ),
         ],
       ),
     );
   }
 
-  void _onItemTapped(int index, BuildContext context) {
+   void _onItemTapped(int index, BuildContext context) {
     switch (index) {
       case 0:
-        context.go('/home');
+        GoRouter.of(context).go('/home');
         break;
       case 1:
-        context.go('/journal');
+        GoRouter.of(context).go('/cafe');
         break;
       case 2:
-        context.go('/cafe');
+        GoRouter.of(context).go('/library');
         break;
       case 3:
-        context.go('/library');
-        break;
-      case 4:
-        context.go('/settings');
+        GoRouter.of(context).go('/profile');
         break;
     }
   }

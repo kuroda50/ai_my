@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/screens/ore2_profile.dart';
 import 'package:flutter_app/screens/test/test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_app/screens/home.dart';
@@ -39,8 +40,8 @@ final router = GoRouter(
           pageBuilder: (context, state) => NoTransitionPage(child: Library()),
         ),
         GoRoute(
-          path: '/settings',
-          pageBuilder: (context, state) => NoTransitionPage(child: C()),
+          path: '/profile',
+          pageBuilder: (context, state) => NoTransitionPage(child: ProfileScreen()),
         ),
         GoRoute(
           path: '/comp',

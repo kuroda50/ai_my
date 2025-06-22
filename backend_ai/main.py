@@ -2,6 +2,8 @@ from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from module.generate_character_conversation  import generate_character_conversation
 from module.generate_character_settings  import generate_character_settings
+from module.generate_profile_character_settings import generate_profile_character_settings
+from module.generate_profile_character_conversation import generate_profile_character_conversation
 from module.vector_store  import create_vector_store
 from module.upload_content  import upload_txt_file
 from module.ai_chat  import ai_chat_between_characters
@@ -141,6 +143,55 @@ def call_ai_conversation():
         }
         json_str = json.dumps(response_data, ensure_ascii=False)
         return Response(json_str, content_type="application/json; charset=utf-8"), 500
+
+'''プロフィール用キャラクター生成
+リクエストボディは以下のJSON形式
+{
+    "profile_data": {
+        "name": "太郎",
+        "gender": "男性",
+        "age": "25歳",
+        "appearance": "背が高い",
+        "firstPerson": "俺",
+        "personality": "負けず嫌い",
+        "background": "大学生",
+        "goal": "起業",
+        "conversationStyle": "フランク",
+        "idealImage": "友好的"
+    }
+}
+'''
+@app.route("/generate_profile_character", methods=["POST"])
+def generate_profile_character():
+    print("generate_profile_characterが呼ばれたよ")
+    user_input = request.get_json()
+    profile_data = user_input.get("profile_data", {})
+    
+    character_index = get_next_character_index()
+    
+    # プロフィールからキャラクター設定を生成
+    character_settings = generate_profile_character_settings(profile_data, character_index)
+    print("プロフィールキャラシート:", character_settings)
+    
+    # 会話データを生成
+    conversation_data = generate_profile_character_conversation(character_settings, character_index)
+    print("プロフィール会話データ:", conversation_data)
+    
+    # ベクトルストアを作成する
+    vector_store_details = create_vector_store(f"profile_character_{character_index}")
+    vector_store_id = vector_store_details.get("id", "")
+    
+    # ベクトルストアにデータをアップロードする
+    text_file_path = [f"backend_ai/data/character/{character_index}/settings.txt"]
+    upload_txt_file(text_file_path, vector_store_id)
+    
+    response_data = {
+        "character_settings": character_settings,
+        "conversation_data": conversation_data,
+        "vector_store_id": vector_store_id,
+        "status": "success",
+    }
+    return jsonify(response_data), 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)

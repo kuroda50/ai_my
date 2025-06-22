@@ -6,6 +6,7 @@ class LocalStorage {
   static const String _eventsKey = 'events';
   static const String _charactersKey = 'characters';
   static const String _conversationLogsKey = 'conversation_logs';
+  static const String _profileKey = 'user_profile';
 
   // Event関連
   static Future<void> saveEvent(Map<String, dynamic> eventData) async {
@@ -115,11 +116,39 @@ class LocalStorage {
     await prefs.setString(_conversationLogsKey, jsonEncode(logs));
   }
 
+  // Profile関連
+  static Future<void> saveProfile(Map<String, String> profileData) async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    final profile = {
+      'id': DateTime.now().millisecondsSinceEpoch.toString(),
+      'timestamp': DateTime.now().toIso8601String(),
+      'data': profileData,
+    };
+    
+    await prefs.setString(_profileKey, jsonEncode(profile));
+  }
+
+  static Future<Map<String, dynamic>?> getProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+    final profileJson = prefs.getString(_profileKey);
+    
+    if (profileJson == null) return null;
+    
+    return jsonDecode(profileJson) as Map<String, dynamic>;
+  }
+
+  static Future<void> deleteProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_profileKey);
+  }
+
   // データクリア
   static Future<void> clearAllData() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_eventsKey);
     await prefs.remove(_charactersKey);
     await prefs.remove(_conversationLogsKey);
+    await prefs.remove(_profileKey);
   }
 }
