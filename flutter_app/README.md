@@ -1,16 +1,138 @@
-# flutter_app
+# Flutter App - AI 感情分析アプリ README
 
-A new Flutter project.
+このFlutterアプリは、感情とAI会話を組み合わせた心理サポートアプリケーションです。
 
-## Getting Started
+## ディレクトリ構造と各ファイルの機能
 
-This project is a starting point for a Flutter application.
+### 📁 lib/
+メインのアプリケーションコード
 
-A few resources to get you started if this is your first Flutter project:
+#### 🚀 main.dart
+- アプリケーションのエントリーポイント
+- MaterialAppの設定とルーティング設定
+- アプリ全体のテーマとデバッグ設定
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+#### ⚙️ config/
+アプリの設定ファイルを格納
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- **router.dart**: Go_Routerを使用したナビゲーション設定
+  - ホーム、ジャーナル、カフェ、ライブラリ、プロフィール画面へのルーティング
+  - Shellルート（底部ナビゲーション）の設定
+
+#### 🏗️ models/
+データモデルクラス
+
+- **person.dart**: キャラクターのデータモデル
+  - キャラクターの位置、色、名前、メッセージ履歴
+  - AI設定データ（aiCharacterSettings, aiConversationData, vectorStoreId）
+  - 移動関連のプロパティ（方向、速度、位置）
+
+#### 🔧 services/
+外部APIやデータ管理サービス
+
+- **ai_service.dart**: AIバックエンドとの通信サービス
+  - キャラクター生成API（generateCharacter, generateProfileCharacter）
+  - AI会話API（startAIConversation）
+  - バックエンド接続チェック
+  - データ形式変換機能
+
+- **local_storage.dart**: ローカルデータ保存サービス
+  - SharedPreferencesを使用したデータ永続化
+  - イベント、キャラクター、会話ログ、プロフィールの保存・取得・削除
+  - 全データクリア機能
+
+#### 📱 screens/
+各画面のUIコンポーネント
+
+- **home.dart**: ホーム画面（本のようなデザインのメインダッシュボード）
+  - タブ切り替え（イベント、キャラクター、会話ログ）
+  - 保存データの表示と管理
+  - 新規作成ボタン
+
+- **journal.dart**: 感情記録画面（5W1H形式）
+  - カードフリップアニメーション
+  - 5W1H質問フォーム（Who, What, When, Where, Why, How）
+  - 感情パラメーター設定（喜怒哀楽のスライダー）
+  - ローカルストレージへの保存機能
+
+- **cafe.dart**: メイン会話画面（カフェゲーム）
+  - キャラクター移動とアニメーション
+  - 自動近接検知と会話開始
+  - AI会話表示オーバーレイ
+  - ドラッグ＆ドロップ機能
+  - リアルタイム会話ログ保存
+
+- **library.dart**: 記録ライブラリ画面
+  - 保存されたイベントとキャラクターの閲覧
+  - タブ切り替え（イベント一覧、キャラクター一覧）
+  - データ削除機能
+  - キャラクター詳細表示
+
+- **complex_form.dart**: 複雑な質問フォーム画面
+  - 多段階フォーム（基本データ、感情データ、詳細質問）
+  - AI キャラクター生成機能
+  - バックエンドAPIとの連携
+
+- **character_detail.dart**: キャラクター詳細画面
+- **drag_conversation_dialog.dart**: ドラッグ会話ダイアログ
+- **ore2_profile.dart**: プロフィール画面
+
+#### 🎨 widgets/
+再利用可能なUIコンポーネント
+
+- **shell.dart**: 底部ナビゲーションシェル
+- **emotion_slider.dart**: 感情レベル調整スライダー
+- **question_field.dart**: 質問入力フィールド
+- **age_slider_field.dart**: 年齢選択スライダー
+- **simple_select_field.dart**: シンプル選択フィールド
+- **ai_conversation_dialog.dart**: AI会話ダイアログ
+- **avatar_widget.dart**: アバター表示ウィジェット
+- **conversation_dialogs.dart**: 会話ダイアログ
+
+#### 🎮 components/
+ゲームコンポーネント
+
+- **cafe_game.dart**: Flameエンジンを使用したカフェゲーム
+  - カフェ内装の描画（テーブル、椅子、カウンター、植物）
+  - キャラクタースプライトの管理
+  - 衝突検知とドラッグ＆ドロップ処理
+  - ゲームサイズに応じた動的レイアウト
+
+## 主な機能
+
+### 💭 感情記録機能
+- 5W1H形式での出来事記録
+- 喜怒哀楽の感情パラメーター設定
+- カードフリップアニメーション
+
+### 🤖 AI キャラクター機能
+- プロフィールAIとコンプレックスAIの生成
+- キャラクター同士の自動会話
+- バックエンドAIサービスとの連携
+
+### 🎮 インタラクティブカフェ
+- リアルタイムキャラクター移動
+- 近接検知による自動会話開始
+- ドラッグ＆ドロップでキャラクター操作
+
+### 📚 データ管理
+- ローカルストレージでのデータ永続化
+- イベント、キャラクター、会話ログの管理
+- 詳細な記録表示と削除機能
+
+## 技術スタック
+
+- **Flutter**: UIフレームワーク
+- **Go Router**: ナビゲーション管理
+- **Flame**: ゲームエンジン（カフェゲーム部分）
+- **SharedPreferences**: ローカルデータ保存
+- **HTTP**: バックエンドAPI通信
+
+## バックエンド連携
+
+アプリは `localhost:5001` で動作するPythonバックエンドと連携し、以下の機能を提供：
+
+- AI キャラクター生成
+- 自然言語による会話生成
+- ベクターストア管理
+- キャラクター設定の永続化

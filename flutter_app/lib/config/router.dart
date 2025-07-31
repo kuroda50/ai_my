@@ -3,9 +3,8 @@ import 'package:flutter_app/screens/ore2_profile.dart';
 import 'package:flutter_app/screens/test/test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_app/screens/home.dart';
-import 'package:flutter_app/screens/a.dart';
-import 'package:flutter_app/screens/b.dart';
-import 'package:flutter_app/screens/c.dart';
+import 'package:flutter_app/screens/journal.dart';
+import 'package:flutter_app/screens/cafe.dart';
 import 'package:flutter_app/screens/library.dart';
 import 'package:flutter_app/widgets/shell.dart';
 import 'package:flutter_app/screens/complex_form.dart';
@@ -29,11 +28,11 @@ final router = GoRouter(
         ),
         GoRoute(
           path: '/journal',
-          pageBuilder: (context, state) => NoTransitionPage(child: A()),
+          pageBuilder: (context, state) => NoTransitionPage(child: Journal()),
         ),
         GoRoute(
           path: '/cafe',
-          pageBuilder: (context, state) => NoTransitionPage(child: B()),
+          pageBuilder: (context, state) => NoTransitionPage(child: Cafe()),
         ),
         GoRoute(
           path: '/library',

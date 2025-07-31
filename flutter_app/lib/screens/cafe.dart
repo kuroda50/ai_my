@@ -10,13 +10,13 @@ import '../services/local_storage.dart';
 import '../services/ai_service.dart';
 import '../components/cafe_game.dart';
 
-class B extends StatefulWidget {
+class Cafe extends StatefulWidget {
   final Person? newSelf;
   
-  const B({super.key, this.newSelf});
+  const Cafe({super.key, this.newSelf});
 
   @override
-  State<B> createState() => _BState();
+  State<Cafe> createState() => _CafeState();
 }
 
 // パスを描画するカスタムペインター
@@ -77,7 +77,7 @@ class PathPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
-class _BState extends State<B> with TickerProviderStateMixin {
+class _CafeState extends State<Cafe> with TickerProviderStateMixin {
   late AnimationController _animationController;
   late AnimationController _zoomController;
   late Animation<double> _zoomAnimation;

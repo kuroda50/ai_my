@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'b.dart';
+import 'cafe.dart';
 import '../models/person.dart';
 import '../services/ai_service.dart';
 import '../services/local_storage.dart';

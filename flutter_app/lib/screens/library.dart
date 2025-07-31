@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../services/local_storage.dart';
 import '../models/person.dart';
 import 'dart:ui';
-import 'b.dart';
+import 'cafe.dart';
 import 'character_detail.dart';
 
 class Library extends StatefulWidget {
@@ -322,7 +322,7 @@ class _LibraryState extends State<Library> with SingleTickerProviderStateMixin {
   void _openCharacterChat(Map<String, dynamic> characterData) {
     // カフェ画面に遷移（bottomNavigationで保存されたキャラクター全体を表示）
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => B()),
+      MaterialPageRoute(builder: (context) => Cafe()),
     );
   }
 
