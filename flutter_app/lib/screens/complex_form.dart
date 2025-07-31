@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'b.dart';
+import 'cafe.dart';
 import '../models/person.dart';
 import '../services/ai_service.dart';
 import '../services/local_storage.dart';
@@ -155,20 +155,20 @@ class _ComplexFormState extends State<ComplexForm> {
           final conversationData = aiResponse['conversation_data'] as String;
           final vectorStoreId = aiResponse['vector_store_id'] as String;
 
-          // Parse character name from settings (simple extraction)
-          final nameMatch = RegExp(r'名前.*?：\s*(.+?)(?:\n|$)', multiLine: true).firstMatch(characterSettings);
-          final characterName = nameMatch?.group(1)?.trim() ?? 'AIキャラクター';
+          // コンプレックス由来のキャラクターは「俺２」「俺３」などの名前にする
+          final characterName = await _generateComplexCharacterName();
 
           // Create messages from conversation data
           final messages = _parseConversationMessages(conversationData);
 
-          // Create new AI-generated character
+          // コンプレックス由来のAIキャラクターを作成
+          final characterId = await _generateComplexCharacterId();
           final newSelf = Person(
-            id: 999,
+            id: characterId,
             name: characterName,
-            color: Colors.teal,
-            currentPosition: const Offset(250, 300),
-            targetPosition: const Offset(250, 300),
+            color: Colors.red,
+            currentPosition: const Offset(350, 300),
+            targetPosition: const Offset(350, 300),
             speed: 1.0,
             direction: const Offset(1, 0),
             lastDirectionChange: 0,
@@ -484,5 +484,52 @@ class _ComplexFormState extends State<ComplexForm> {
         ),
       ),
     );
+  }
+
+  Future<String> _generateComplexCharacterName() async {
+    // ローカルストレージから既存のコンプレックスキャラクター数を取得
+    try {
+      final savedCharacters = await LocalStorage.getCharacters();
+      
+      // コンプレックスキャラクター（ID: 2000番台）の数をカウント
+      int complexCharacterCount = 0;
+      for (final character in savedCharacters) {
+        final id = int.tryParse(character['id']) ?? 0;
+        if (2000 <= id && id < 3000) {
+          complexCharacterCount++;
+        }
+      }
+      
+      // 次の番号を決定（俺２から開始）
+      final nextNumber = complexCharacterCount + 2;
+      return '俺$nextNumber';
+    } catch (e) {
+      print('キャラクター数取得エラー: $e');
+      // エラーの場合はデフォルトで俺２
+      return '俺２';
+    }
+  }
+
+  Future<int> _generateComplexCharacterId() async {
+    // ローカルストレージから既存のコンプレックスキャラクター数を取得
+    try {
+      final savedCharacters = await LocalStorage.getCharacters();
+      
+      // コンプレックスキャラクター（ID: 2000番台）の数をカウント
+      int complexCharacterCount = 0;
+      for (final character in savedCharacters) {
+        final id = int.tryParse(character['id']) ?? 0;
+        if (2000 <= id && id < 3000) {
+          complexCharacterCount++;
+        }
+      }
+      
+      // 次のIDを決定（2001から開始）
+      return 2001 + complexCharacterCount;
+    } catch (e) {
+      print('キャラクターID生成エラー: $e');
+      // エラーの場合はデフォルトで2001
+      return 2001;
+    }
   }
 }

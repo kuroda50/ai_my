@@ -3,7 +3,8 @@ import 'package:go_router/go_router.dart';
 import '../services/local_storage.dart';
 import '../models/person.dart';
 import 'dart:ui';
-import 'b.dart';
+import 'cafe.dart';
+import 'character_detail.dart';
 
 class Library extends StatefulWidget {
   const Library({super.key});
@@ -286,12 +287,19 @@ class _LibraryState extends State<Library> with SingleTickerProviderStateMixin {
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
+                  icon: const Icon(Icons.info, color: Colors.green),
+                  onPressed: () => _openCharacterDetail(character),
+                  tooltip: '詳細を見る',
+                ),
+                IconButton(
                   icon: const Icon(Icons.chat, color: Colors.blue),
                   onPressed: () => _openCharacterChat(character),
+                  tooltip: '会話を開始',
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete, color: Colors.red),
                   onPressed: () => _deleteCharacter(character['id']),
+                  tooltip: '削除',
                 ),
               ],
             ),
@@ -301,10 +309,20 @@ class _LibraryState extends State<Library> with SingleTickerProviderStateMixin {
     );
   }
 
+  void _openCharacterDetail(Map<String, dynamic> characterData) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => CharacterDetailScreen(
+          characterData: characterData,
+        ),
+      ),
+    );
+  }
+
   void _openCharacterChat(Map<String, dynamic> characterData) {
     // カフェ画面に遷移（bottomNavigationで保存されたキャラクター全体を表示）
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => B()),
+      MaterialPageRoute(builder: (context) => Cafe()),
     );
   }
 

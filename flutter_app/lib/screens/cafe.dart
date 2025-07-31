@@ -1,26 +1,87 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'dart:async';
+import 'package:flame/game.dart' as flame;
 import 'drag_conversation_dialog.dart';
 import '../models/person.dart';
 import '../widgets/conversation_dialogs.dart';
 import '../widgets/avatar_widget.dart';
 import '../services/local_storage.dart';
 import '../services/ai_service.dart';
+import '../components/cafe_game.dart';
 
-class B extends StatefulWidget {
+class Cafe extends StatefulWidget {
   final Person? newSelf;
   
-  const B({super.key, this.newSelf});
+  const Cafe({super.key, this.newSelf});
 
   @override
-  State<B> createState() => _BState();
+  State<Cafe> createState() => _CafeState();
 }
 
-class _BState extends State<B> with TickerProviderStateMixin {
+// パスを描画するカスタムペインター
+class PathPainter extends CustomPainter {
+  final Offset start;
+  final Offset end;
+  final Color color;
+  
+  PathPainter({required this.start, required this.end, required this.color});
+  
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+    
+    final path = Path();
+    path.moveTo(start.dx + 25, start.dy + 25); // キャラクターの中心から
+    
+    // 直線ではなく、少し湾曲したパスを描く
+    final controlPoint = Offset(
+      (start.dx + end.dx) / 2 + (Random().nextDouble() - 0.5) * 50,
+      (start.dy + end.dy) / 2 + (Random().nextDouble() - 0.5) * 50,
+    );
+    
+    path.quadraticBezierTo(
+      controlPoint.dx,
+      controlPoint.dy,
+      end.dx + 25,
+      end.dy + 25,
+    );
+    
+    // 点線のパスを描画
+    final dashPath = Path();
+    final dashPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    
+    double distance = 0;
+    const dashWidth = 5;
+    const dashSpace = 5;
+    
+    for (final metric in path.computeMetrics()) {
+      while (distance < metric.length) {
+        final extractPath = metric.extractPath(distance, distance + dashWidth);
+        dashPath.addPath(extractPath, Offset.zero);
+        distance += dashWidth + dashSpace;
+      }
+    }
+    
+    canvas.drawPath(dashPath, dashPaint);
+  }
+  
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class _CafeState extends State<Cafe> with TickerProviderStateMixin {
   late AnimationController _animationController;
   late AnimationController _zoomController;
   late Animation<double> _zoomAnimation;
+  late CafeGame _cafeGame;
   
   List<Person> people = [];
   Person? selectedPerson;
@@ -43,6 +104,9 @@ class _BState extends State<B> with TickerProviderStateMixin {
   final Random random = Random();
   Size screenSize = const Size(400, 800);
 
+  // 最近接ペアのアプローチ状態をチェックするタイマー
+  Timer? _closestPairCheckTimer;
+  
   @override
   void initState() {
     super.initState();
@@ -70,33 +134,63 @@ class _BState extends State<B> with TickerProviderStateMixin {
       curve: Curves.easeInOut,
     ));
     
+    // CafeGameを初期化
+    _cafeGame = CafeGame();
+    _cafeGame.onCharactersNearby = (person1, person2) {
+      if (!isInConversation && !hasStartedApproaching && !_isAIConversationActive) {
+        hasStartedApproaching = true;
+        _stopCharacters(person1, person2);
+        _startAutoConversation(person1, person2);
+      }
+    };
+    _cafeGame.onPersonTap = (person) => _onPersonTapped(person);
+    _cafeGame.onDragStart = (person) {
+      setState(() {
+        draggedPerson = person;
+      });
+    };
+    _cafeGame.onDragEnd = (person) {
+      setState(() {
+        draggedPerson = null;
+        // ドラッグ終了時にtargetPositionを現在位置に更新
+        person.targetPosition = person.currentPosition;
+      });
+    };
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {
         screenSize = MediaQuery.of(context).size;
+        _cafeGame.setGameSize(screenSize);
         _initializePeople();
         _startAutoApproach();
+        
+        // 最近接ペアのアプローチ状態をチェックするタイマーを開始
+        _startClosestPairCheckTimer();
       });
+    });
+  }
+  
+  // 最近接ペアのアプローチ状態を定期的にチェック
+  void _startClosestPairCheckTimer() {
+    _closestPairCheckTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      // 会話中やアプローチ中でない場合、新たな最近接ペアを探す
+      if (!isInConversation && !_isAIConversationActive && !_isAutoApproaching) {
+        print('定期チェック: 新たな最近接ペアを探します');
+        _startClosestPairApproach();
+      } else {
+        print('定期チェック: 既に会話中またはアプローチ中です');
+      }
     });
   }
 
   void _initializePeople() async {
-    people = [
-      Person(
-        id: 0,
-        name: 'あなた',
-        color: Colors.orange,
-        currentPosition: Offset(screenSize.width * 0.3, screenSize.height * 0.5),
-        targetPosition: Offset(screenSize.width * 0.3, screenSize.height * 0.5),
-        speed: 1.0,
-        direction: _getRandomDirection(),
-        lastDirectionChange: 0,
-        messages: ['こんにちは', 'よろしくお願いします', '今日はいい天気ですね'],
-        isUser: true,
-      ),
-    ];
+    people = [];
     
     // 新しい自分が渡された場合は追加
     if (widget.newSelf != null) {
+      final newSelfPosition = _getRandomPosition();
+      widget.newSelf!.currentPosition = newSelfPosition;
+      widget.newSelf!.targetPosition = newSelfPosition;
       people.add(widget.newSelf!);
     } else {
       // ローカルストレージから保存されたキャラクターを読み込み
@@ -110,18 +204,13 @@ class _BState extends State<B> with TickerProviderStateMixin {
       
       for (int i = 0; i < savedCharacters.length; i++) {
         final characterData = savedCharacters[i];
+        final randomPosition = _getRandomPosition();
         final character = Person(
           id: int.parse(characterData['id']),
           name: characterData['name'],
           color: Color(characterData['color'] ?? Colors.teal.value),
-          currentPosition: Offset(
-            100 + (i * 80.0) % (screenSize.width - 200),
-            200 + ((i ~/ 3) * 100.0),
-          ),
-          targetPosition: Offset(
-            100 + (i * 80.0) % (screenSize.width - 200),
-            200 + ((i ~/ 3) * 100.0),
-          ),
+          currentPosition: randomPosition,
+          targetPosition: randomPosition,
           speed: 1.0,
           direction: _getRandomDirection(),
           lastDirectionChange: 0,
@@ -136,6 +225,18 @@ class _BState extends State<B> with TickerProviderStateMixin {
       }
       
       setState(() {});
+      
+      // CafeGameにキャラクターを更新
+      _cafeGame.updatePeople(people);
+      
+      // キャラクターが2人以上いる場合、一番近いペアを自動で近づかせる
+      if (people.length >= 2) {
+        // 少し遅延させてから最近接ペアのアプローチを開始
+        // これにより、キャラクターの初期位置が正しく設定された後に処理が実行される
+        Future.delayed(const Duration(milliseconds: 500), () {
+          _startClosestPairApproach();
+        });
+      }
     } catch (e) {
       print('Error loading saved characters: $e');
     }
@@ -163,10 +264,14 @@ class _BState extends State<B> with TickerProviderStateMixin {
     
     // 近接検知のために人の位置を更新
     for (final person in people) {
-      if (!person.isUser || person.id == 0) continue;
       
       // 停止中のキャラクターは動かない
       if (_stoppedCharacters.contains(person)) {
+        continue;
+      }
+      
+      // ドラッグ中のキャラクターは自動移動しない
+      if (draggedPerson != null && draggedPerson!.id == person.id) {
         continue;
       }
       
@@ -190,6 +295,9 @@ class _BState extends State<B> with TickerProviderStateMixin {
       }
     }
     
+    // CafeGameにキャラクターの位置更新を通知
+    _cafeGame.updatePeople(people);
+    
     // 近接検知（setStateを呼ぶ可能性がある処理を分離）
     _scheduleProximityCheck();
   }
@@ -209,6 +317,7 @@ class _BState extends State<B> with TickerProviderStateMixin {
     _approachController.dispose();
     _conversationTimer?.cancel();
     _approachTimer?.cancel();
+    _closestPairCheckTimer?.cancel();
     super.dispose();
   }
 
@@ -264,7 +373,7 @@ class _BState extends State<B> with TickerProviderStateMixin {
       if (isInConversation || _isAIConversationActive) return;
       
       // ランダムに2人のキャラクターを選択
-      final availablePeople = people.where((p) => p.id != 0).toList();
+      final availablePeople = people;
       if (availablePeople.length >= 2) {
         final person1 = availablePeople[random.nextInt(availablePeople.length)];
         Person? person2;
@@ -276,6 +385,72 @@ class _BState extends State<B> with TickerProviderStateMixin {
         _initiateApproach(person1, person2);
       }
     });
+  }
+  
+  // 一番近い2人のキャラクターを見つけて自動的に近づかせる
+  void _startClosestPairApproach() {
+    if (people.length < 2) return;
+    print('一番近いキャラクターペアを探しています...');
+    
+    // 既に会話中または自動アプローチ中の場合は何もしない
+    if (isInConversation || _isAIConversationActive || _isAutoApproaching) {
+      print('既に会話中または自動アプローチ中のため、最近接ペアアプローチをスキップします');
+      return;
+    }
+    
+    // 全てのキャラクターペアの距離を計算
+    double minDistance = double.infinity;
+    Person? closestPerson1;
+    Person? closestPerson2;
+    
+    for (int i = 0; i < people.length; i++) {
+      for (int j = i + 1; j < people.length; j++) {
+        final person1 = people[i];
+        final person2 = people[j];
+        
+        // 同じキャラクターは除外
+        if (person1.id == person2.id) continue;
+        
+        final distance = (person1.currentPosition - person2.currentPosition).distance;
+        
+        // 既に十分近い場合は会話を開始
+        if (distance <= proximityThreshold * 1.5) {
+          print('既に十分近いキャラクターペアを発見: ${person1.name} と ${person2.name}, 距離: $distance');
+          _stopCharacters(person1, person2);
+          _startAutoConversation(person1, person2);
+          return;
+        }
+        
+        // より近いペアを見つけた場合は更新
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestPerson1 = person1;
+          closestPerson2 = person2;
+        }
+      }
+    }
+    
+    // 最も近いペアが見つかった場合、アプローチを開始
+    if (closestPerson1 != null && closestPerson2 != null) {
+      print('最も近いキャラクターペア: ${closestPerson1.name} と ${closestPerson2.name}, 距離: $minDistance');
+      
+      // どちらのキャラクターを動かすかランダムに決定
+      final shouldMoveFirst = random.nextBool();
+      final movingPerson = shouldMoveFirst ? closestPerson1 : closestPerson2;
+      final targetPerson = shouldMoveFirst ? closestPerson2 : closestPerson1;
+      
+      // アプローチを開始
+      _initiateApproach(movingPerson, targetPerson);
+      
+      // アプローチ開始を通知
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${movingPerson.name}が${targetPerson.name}に近づいています...'),
+          duration: const Duration(seconds: 2),
+          backgroundColor: Colors.blue,
+        ),
+      );
+    }
   }
 
   void _initiateApproach(Person movingPerson, Person targetPerson) {
@@ -548,10 +723,8 @@ class _BState extends State<B> with TickerProviderStateMixin {
               ),
               child: Stack(
                 children: [
-                  // カフェの背景装飾
-                  _buildCafeBackground(),
-                  // 歩いている人々
-                  ...people.map((person) => _buildWalkingPerson(person)).toList(),
+                  // Flameベースのカフェ背景とキャラクター
+                  flame.GameWidget<CafeGame>.controlled(gameFactory: () => _cafeGame),
                   // 近接している人をハイライト
                   ...nearbyPeople.map((person) => _buildNearbyHighlight(person)).toList(),
                   // ズーム中の人をハイライト
@@ -565,112 +738,15 @@ class _BState extends State<B> with TickerProviderStateMixin {
                     _buildApproachArrow(),
                   // 停止中のキャラクター表示
                   ..._stoppedCharacters.map((person) => _buildStoppedIndicator(person)).toList(),
+                  
+                  // 会話準備中のキャラクター表示
+                  ..._conversationReadyCharacters.map((person) => _buildConversationReadyIndicator(person)).toList(),
                 ],
               ),
             ),
           );
         },
       ),
-    );
-  }
-
-  Widget _buildCafeBackground() {
-    return Stack(
-      children: [
-        // テーブル
-        Positioned(
-          top: 200,
-          left: 50,
-          child: _buildTable(),
-        ),
-        Positioned(
-          top: 300,
-          right: 80,
-          child: _buildTable(),
-        ),
-        Positioned(
-          bottom: 200,
-          left: 150,
-          child: _buildTable(),
-        ),
-        // 植物
-        Positioned(
-          top: 100,
-          right: 50,
-          child: _buildPlant(),
-        ),
-        Positioned(
-          bottom: 150,
-          right: 50,
-          child: _buildPlant(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTable() {
-    return Container(
-      width: 60,
-      height: 60,
-      decoration: BoxDecoration(
-        color: Color(0xFF8B4513),
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 4,
-            offset: Offset(2, 2),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPlant() {
-    return Container(
-      width: 40,
-      height: 60,
-      decoration: BoxDecoration(
-        color: Color(0xFF228B22),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Center(
-        child: Icon(
-          Icons.local_florist,
-          color: Colors.green[800],
-          size: 24,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWalkingPerson(Person person) {
-    return AvatarWidget(
-      person: person,
-      isSelected: selectedPerson?.id == person.id,
-      isDragged: draggedPerson?.id == person.id,
-      onTap: () => _onPersonTapped(person),
-      onPanStart: person.isUser && person.id == 0 ? (details) {
-        setState(() {
-          draggedPerson = person;
-        });
-      } : null,
-      onPanUpdate: person.isUser && person.id == 0 ? (details) {
-        if (draggedPerson == person) {
-          setState(() {
-            person.currentPosition = Offset(
-              (person.currentPosition.dx + details.delta.dx).clamp(0.0, screenSize.width - 50),
-              (person.currentPosition.dy + details.delta.dy).clamp(0.0, screenSize.height - 100),
-            );
-          });
-          _checkProximityForDrag(person);
-        }
-      } : null,
-      onPanEnd: person.isUser && person.id == 0 ? (details) {
-        setState(() {
-          draggedPerson = null;
-        });
-      } : null,
     );
   }
 
@@ -774,19 +850,52 @@ class _BState extends State<B> with TickerProviderStateMixin {
     // 会話開始の表示
     print('二人のキャラクターが出会いました: ${person1.name} と ${person2.name}');
     
+    // キャラクターを識別
+    Person? profileAI; // プロフィールAI（ID: 1000番台）
+    Person? complexAI; // コンプレックスAI（ID: 2000番台）
+    
+    // 各キャラクターを識別
+    for (final person in [person1, person2]) {
+      if (1000 <= person.id && person.id < 2000) {
+        profileAI = person;
+      } else if (2000 <= person.id && person.id < 3000) {
+        complexAI = person;
+      }
+    }
+    
+    // 会話パターンを決定
+    if (profileAI != null && complexAI != null) {
+      // プロフィールAIとコンプレックスAIの会話
+      print('プロフィールAI vs コンプレックスAI 会話開始: ${profileAI.name} vs ${complexAI.name}');
+      await _startProfileVsComplexConversation(profileAI, complexAI);
+      return;
+    } else {
+      // それ以外の場合はデモ会話
+      print('通常の会話を開始します。');
+      _startDemoConversation(person1, person2);
+      return;
+    }
+  }
+
+  Future<void> _startProfileVsComplexConversation(Person profileAI, Person complexAI) async {
+    print('プロフィールAI vs コンプレックスAI 会話開始: ${profileAI.name} vs ${complexAI.name}');
+    
     // キャラクターの詳細情報を取得
     final character1Data = {
-      'name': person1.name,
-      'complexData': person1.complexData,
-      'aiCharacterSettings': person1.aiCharacterSettings,
-      'vectorStoreId': person1.vectorStoreId,
+      'id': profileAI.id,
+      'name': profileAI.name,
+      'complexData': profileAI.complexData,
+      'basicData': {}, // プロフィールAIには基本プロフィールデータを設定
+      'aiCharacterSettings': profileAI.aiCharacterSettings,
+      'vectorStoreId': profileAI.vectorStoreId,
     };
     
     final character2Data = {
-      'name': person2.name,
-      'complexData': person2.complexData,
-      'aiCharacterSettings': person2.aiCharacterSettings,
-      'vectorStoreId': person2.vectorStoreId,
+      'id': complexAI.id,
+      'name': complexAI.name,
+      'complexData': complexAI.complexData,
+      'aiCharacterSettings': complexAI.aiCharacterSettings,
+      'vectorStoreId': complexAI.vectorStoreId,
     };
     
     print('キャラクター1データ: $character1Data');
@@ -794,13 +903,13 @@ class _BState extends State<B> with TickerProviderStateMixin {
     
     // vectorStoreIdを持つキャラクターを検索
     final vectorStoreIds = <String>[];
-    if (person1.vectorStoreId != null && person1.vectorStoreId!.isNotEmpty) {
-      vectorStoreIds.add(person1.vectorStoreId!);
-      print('vectorStoreId追加: ${person1.vectorStoreId}');
+    if (profileAI.vectorStoreId != null && profileAI.vectorStoreId!.isNotEmpty) {
+      vectorStoreIds.add(profileAI.vectorStoreId!);
+      print('プロフィールAI vectorStoreId追加: ${profileAI.vectorStoreId}');
     }
-    if (person2.vectorStoreId != null && person2.vectorStoreId!.isNotEmpty) {
-      vectorStoreIds.add(person2.vectorStoreId!);
-      print('vectorStoreId追加: ${person2.vectorStoreId}');
+    if (complexAI.vectorStoreId != null && complexAI.vectorStoreId!.isNotEmpty) {
+      vectorStoreIds.add(complexAI.vectorStoreId!);
+      print('コンプレックスAI vectorStoreId追加: ${complexAI.vectorStoreId}');
     }
 
     print('vectorStoreIds数: ${vectorStoreIds.length}');
@@ -810,30 +919,24 @@ class _BState extends State<B> with TickerProviderStateMixin {
       final latestEvent = await _getLatestEvent();
       print('取得したイベント: $latestEvent');
       
+      // プロフィールAI vs コンプレックスAIの会話では、イベントの主語をプロフィールAIに変更
+      final modifiedEvent = Map<String, String>.from(latestEvent);
+      modifiedEvent['who'] = profileAI.name; // 主語をプロフィールAIに変更
+      print('修正後のイベント: $modifiedEvent');
+      
       // イベント情報を保存
       setState(() {
-        _currentEvent = latestEvent;
+        _currentEvent = modifiedEvent;
       });
       
       try {
         print('AIService.startAIConversationを呼び出します...');
         
-        // キャラクターデータを含めて会話APIを呼び出す
+        // プロフィールAI vs コンプレックスAI 会話APIを呼び出す
         final conversationResult = await AIService.startAIConversation(
           vectorStoreIds, 
-          latestEvent,
-          characterData: [
-            {
-              'name': person1.name,
-              'complexData': person1.complexData,
-              'settings': person1.aiCharacterSettings,
-            },
-            {
-              'name': person2.name,
-              'complexData': person2.complexData,
-              'settings': person2.aiCharacterSettings,
-            }
-          ]
+          modifiedEvent,
+          characterData: [character1Data, character2Data]
         );
         
         print('API応答: $conversationResult');
@@ -843,24 +946,24 @@ class _BState extends State<B> with TickerProviderStateMixin {
           print('受信したメッセージ数: ${messages.length}');
           
           // 会話ログを保存
-          await _saveConversationLog(person1, person2, messages, latestEvent);
+          await _saveConversationLog(profileAI, complexAI, messages, modifiedEvent);
           
           // 会話を段階的に表示
           _startConversationDisplay(messages);
         } else {
           print('会話結果がnullまたはメッセージが空です');
           // フォールバック: デモ会話を表示
-          _startDemoConversation(person1, person2);
+          _startDemoConversation(profileAI, complexAI);
         }
       } catch (e) {
         print('AI会話エラー: $e');
         // フォールバック: デモ会話を表示
-        _startDemoConversation(person1, person2);
+        _startDemoConversation(profileAI, complexAI);
       }
     } else {
       print('vectorStoreIdが不足しています。デモ会話を開始します。');
       // フォールバック: デモ会話を表示
-      _startDemoConversation(person1, person2);
+      _startDemoConversation(profileAI, complexAI);
     }
   }
 
@@ -922,6 +1025,9 @@ class _BState extends State<B> with TickerProviderStateMixin {
     _resumeAllCharacters();
   }
 
+  // 会話開始前のアニメーション用変数
+  List<Person> _conversationReadyCharacters = [];
+  
   void _stopCharacters(Person person1, Person person2) {
     print('キャラクターを停止: ${person1.name}, ${person2.name}');
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -932,6 +1038,17 @@ class _BState extends State<B> with TickerProviderStateMixin {
         if (!_stoppedCharacters.contains(person2)) {
           _stoppedCharacters.add(person2);
         }
+        
+        // 会話準備中のキャラクターとしてマーク
+        _conversationReadyCharacters = [person1, person2];
+        
+        // 少し遅延してから会話を開始（アニメーションを見せるため）
+        Future.delayed(const Duration(milliseconds: 800), () {
+          if (mounted && _conversationReadyCharacters.isNotEmpty) {
+            _conversationReadyCharacters = [];
+            setState(() {});
+          }
+        });
       });
     });
   }
@@ -1140,35 +1257,68 @@ class _BState extends State<B> with TickerProviderStateMixin {
     final start = _movingPerson!.currentPosition;
     final end = _targetPerson!.currentPosition;
     
-    return Positioned(
-      left: start.dx + 25,
-      top: start.dy - 30,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.blue.withOpacity(0.8),
-          borderRadius: BorderRadius.circular(12),
+    return Stack(
+      children: [
+        // 移動パスを表示
+        CustomPaint(
+          size: Size(screenSize.width, screenSize.height),
+          painter: PathPainter(
+            start: start,
+            end: end,
+            color: Colors.blue.withOpacity(0.4),
+          ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '${_targetPerson!.name}に接近中',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
+        
+        // 接近中のラベル
+        Positioned(
+          left: start.dx + 25,
+          top: start.dy - 30,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '${_targetPerson!.name}に接近中',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.arrow_forward,
+                  color: Colors.white,
+                  size: 12,
+                ),
+              ],
+            ),
+          ),
+        ),
+        
+        // ターゲットの周りに目標地点を表示
+        Positioned(
+          left: end.dx - 30,
+          top: end.dy - 30,
+          child: Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.blue.withOpacity(0.6),
+                width: 2,
+                style: BorderStyle.solid,
               ),
             ),
-            const SizedBox(width: 4),
-            const Icon(
-              Icons.arrow_forward,
-              color: Colors.white,
-              size: 12,
-            ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -1201,6 +1351,61 @@ class _BState extends State<B> with TickerProviderStateMixin {
             ),
           ],
         ),
+      ),
+    );
+  }
+  
+  // 会話準備中のキャラクターの周りに表示するインジケーター
+  Widget _buildConversationReadyIndicator(Person person) {
+    return Positioned(
+      left: person.currentPosition.dx - 5,
+      top: person.currentPosition.dy - 5,
+      child: Stack(
+        children: [
+          // 脈動するアニメーション効果
+          TweenAnimationBuilder<double>(
+            tween: Tween<double>(begin: 0.5, end: 1.0),
+            duration: const Duration(milliseconds: 800),
+            builder: (context, value, child) {
+              return Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.yellow.withOpacity(value * 0.8),
+                    width: 3,
+                  ),
+                ),
+              );
+            },
+          ),
+          
+          // 会話アイコン
+          Positioned(
+            right: 0,
+            top: 0,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.yellow,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 4,
+                    offset: const Offset(1, 1),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.chat_bubble,
+                color: Colors.white,
+                size: 14,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

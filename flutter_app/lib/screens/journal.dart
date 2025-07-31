@@ -5,14 +5,14 @@ import '../widgets/emotion_slider.dart';
 import '../widgets/question_field.dart';
 import '../services/local_storage.dart';
 
-class A extends StatefulWidget {
-  const A({super.key});
+class Journal extends StatefulWidget {
+  const Journal({super.key});
 
   @override
-  State<A> createState() => _AState();
+  State<Journal> createState() => _JournalState();
 }
 
-class _AState extends State<A> with TickerProviderStateMixin {
+class _JournalState extends State<Journal> with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _whoController = TextEditingController();
   final _whatController = TextEditingController();
